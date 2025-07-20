@@ -9,7 +9,7 @@ export DJANGO_SETTINGS_MODULE="config.settings.local"
 cd "$(dirname "$0")/../.."
 
 echo "${COLOR_BLUE}Starting mypy${COLOR_NC}"
-python -m dmypy run -- .
+python -m mypy .
 echo "OK"
 
 echo "${COLOR_BLUE}Starting Django Test with coverage${COLOR_NC}"
