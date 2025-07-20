@@ -59,7 +59,7 @@ jobs:
 
       - name: Run Mypy
         env:
-          DJANGO_SETTINGS_MODULE: config.settings.ci
+          DJANGO_SETTINGS_MODULE: config.settings.local
         run: poetry run mypy .
 
   test:
@@ -132,7 +132,7 @@ jobs:
 
       - name: Run Django Migration
         env:
-          DJANGO_SETTINGS_MODULE: config.settings.ci
+          DJANGO_SETTINGS_MODULE: config.settings.local
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: hanjan_be
@@ -143,7 +143,7 @@ jobs:
 
       - name: Check each app has test & Run coverage
         env:
-          DJANGO_SETTINGS_MODULE: config.settings.ci
+          DJANGO_SETTINGS_MODULE: config.settings.local
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: hanjan_be
