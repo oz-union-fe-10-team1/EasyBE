@@ -1,0 +1,155 @@
+name: Code Quality Checks
+
+on:
+  pull_request:
+    branches:
+      - "main"
+      - "develop"
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          key: uv-${{ runner.os }}-${{ hashFiles('requirements.txt') }}-${{ hashFiles('pyproject.toml') }}
+          path: ~/.cache/uv
+
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt --system
+
+      - name: Run isort (Import sorting)
+        run: |
+          uv run isort . --check --diff
+
+      - name: Run black (Code formatting)
+        run: |
+          uv run black . --check
+
+      - name: Set multiline environment variable
+        run: |
+          mkdir -p envs
+          echo "${{ secrets.DJANGO_ENVS }}" >> envs/.local.env
+
+      - name: Run Mypy
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.local
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        run: uv run mypy .
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:14
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: pw1234
+          POSTGRES_DB: hanjan_be
+          TZ: Asia/Seoul
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          key: uv-${{ runner.os }}-${{ hashFiles('requirements.txt') }}-${{ hashFiles('pyproject.toml') }}
+          path: ~/.cache/uv
+
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt --system
+
+      - name: Set multiline environment variable
+        run: |
+          mkdir -p envs
+          echo "${{ secrets.DJANGO_ENVS }}" >> envs/.local.env
+
+      - name: Run Django Migration
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.local
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: hanjan_be
+          DB_USER: postgres
+          DB_PASSWORD: pw1234
+        run: |
+          uv run python manage.py migrate
+
+      - name: Check each app has test & Run coverage
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.local
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: hanjan_be
+          DB_USER: postgres
+          DB_PASSWORD: pw1234
+        run: |
+          ran_tests=false
+          apps="users taste_test feedback products orders adminpanel common"
+
+          for app_name in $apps; do
+            app_path="apps/$app_name"
+            if [ -d "$app_path" ]; then
+              test_files=$(find "$app_path" -type f \( -name "tests.py" -o -name "test_*.py" \))
+              if [ -n "$test_files" ] && grep -q "def test_" $test_files 2>/dev/null; then
+                echo "✅ Running tests for $app_name"
+                uv run coverage run --source="$app_path" --append manage.py test "apps.$app_name"
+                ran_tests=true
+              else
+                echo "⚠️  No test functions found in $app_name"
+              fi
+            else
+              echo "⛔️ Directory not found for $app_name"
+            fi
+          done
+
+          if [ "$ran_tests" = true ]; then
+            uv run coverage report -m
+          else
+            echo "🚫 No tests were run. Skipping coverage report."
+          fi
