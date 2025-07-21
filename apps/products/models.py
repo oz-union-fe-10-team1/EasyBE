@@ -1,11 +1,11 @@
+import uuid
+
 from django.conf import settings
-from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
-from django.db import transaction
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
+from django.db import models, transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.utils import timezone
-import uuid
 
 
 class Region(models.Model):
