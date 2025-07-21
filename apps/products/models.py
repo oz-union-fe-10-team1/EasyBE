@@ -341,7 +341,7 @@ class ProductCategory(models.Model):
     """제품 카테고리 (추가 분류용)"""
 
     name = models.CharField(max_length=50, unique=True)
-    slug = models.SlugField(max_length=50, unique=50)
+    slug = models.SlugField(max_length=50, unique=True)
     description = models.TextField(blank=True)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
 
