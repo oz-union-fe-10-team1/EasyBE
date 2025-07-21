@@ -1,12 +1,11 @@
-# apps/products/models.py
-
-import uuid
-from decimal import Decimal
-
-from django.contrib.auth.models import User
-from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
-from django.db import models, transaction
+from django.conf import settings
+from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.db import transaction
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils import timezone
+import uuid
 
 
 class Region(models.Model):
@@ -342,7 +341,7 @@ class ProductCategory(models.Model):
     """제품 카테고리 (추가 분류용)"""
 
     name = models.CharField(max_length=50, unique=True)
-    slug = models.SlugField(max_length=50, unique=True)
+    slug = models.SlugField(max_length=50, unique=50)
     description = models.TextField(blank=True)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
 
@@ -407,7 +406,7 @@ class ProductImage(models.Model):
 class ProductLike(models.Model):
     """제품 찜하기/좋아요"""
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -423,7 +422,7 @@ class ProductLike(models.Model):
 class ProductRecommendation(models.Model):
     """개인화 추천 결과 캐시"""
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     # 추천 점수 및 근거
