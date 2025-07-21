@@ -4,8 +4,7 @@ import uuid
 from decimal import Decimal
 
 from django.contrib.auth.models import User
-from django.core.validators import (MaxValueValidator, MinValueValidator,
-                                    RegexValidator)
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models, transaction
 from django.utils import timezone
 
@@ -145,9 +144,7 @@ class Product(models.Model):
     # 기본 정보
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
-    brewery = models.ForeignKey(
-        Brewery, on_delete=models.CASCADE, related_name="products"
-    )
+    brewery = models.ForeignKey(Brewery, on_delete=models.CASCADE, related_name="products")
     # 분류 정보
     alcohol_type = models.ForeignKey(AlcoholType, on_delete=models.SET_NULL, null=True)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
@@ -169,9 +166,7 @@ class Product(models.Model):
     volume_ml = models.IntegerField(help_text="용량 (ml)")
 
     # 가격 정보
-    price = models.DecimalField(
-        max_digits=10, decimal_places=0, help_text="판매가격 (원)"
-    )
+    price = models.DecimalField(max_digits=10, decimal_places=0, help_text="판매가격 (원)")
     original_price = models.DecimalField(
         max_digits=10,
         decimal_places=0,
@@ -222,12 +217,8 @@ class Product(models.Model):
     is_regional_specialty = models.BooleanField(default=False, help_text="지역 특산주")
 
     # UI 표시용 추가 필드
-    flavor_notes = models.CharField(
-        max_length=100, blank=True, help_text="향미 특징 (예: 복숭아향)"
-    )
-    short_description = models.CharField(
-        max_length=200, blank=True, help_text="간단 설명"
-    )
+    flavor_notes = models.CharField(max_length=100, blank=True, help_text="향미 특징 (예: 복숭아향)")
+    short_description = models.CharField(max_length=200, blank=True, help_text="간단 설명")
     package_name = models.CharField(max_length=100, blank=True, help_text="패키지명")
 
     # 맛 태그
@@ -239,9 +230,7 @@ class Product(models.Model):
     is_organic = models.BooleanField(default=False, help_text="유기농 여부")
 
     # 추천 시스템용 메타데이터
-    similarity_vector = models.JSONField(
-        default=dict, blank=True, help_text="유사도 계산용 벡터 (캐시용)"
-    )
+    similarity_vector = models.JSONField(default=dict, blank=True, help_text="유사도 계산용 벡터 (캐시용)")
     recommendation_score = models.FloatField(default=0.0, help_text="기본 추천 점수")
 
     # 통계 정보
@@ -322,9 +311,7 @@ class Product(models.Model):
             total_score = self.average_rating * self.review_count
             total_score += new_rating * review_count_change
             self.review_count += review_count_change
-            self.average_rating = (
-                total_score / self.review_count if self.review_count > 0 else 0
-            )
+            self.average_rating = total_score / self.review_count if self.review_count > 0 else 0
 
         self.save(update_fields=["average_rating", "review_count"])
 
@@ -383,9 +370,7 @@ class ProductCategory(models.Model):
 class ProductImage(models.Model):
     """제품 이미지"""
 
-    product = models.ForeignKey(
-        Product, on_delete=models.CASCADE, related_name="images"
-    )
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
     image_url = models.URLField()
     alt_text = models.CharField(max_length=200, blank=True)
     sort_order = models.PositiveIntegerField(default=0)
@@ -403,19 +388,14 @@ class ProductImage(models.Model):
         if self.is_main:
             # 같은 제품의 다른 이미지들을 모두 메인에서 해제
             with transaction.atomic():
-                ProductImage.objects.filter(product=self.product).exclude(
-                    pk=self.pk if self.pk else None
-                ).update(is_main=False)
+                ProductImage.objects.filter(product=self.product).exclude(pk=self.pk if self.pk else None).update(
+                    is_main=False
+                )
 
         super().save(*args, **kwargs)
 
         # 저장 후 메인 이미지가 없다면 이 이미지를 메인으로 설정
-        if (
-            not self.is_main
-            and not ProductImage.objects.filter(
-                product=self.product, is_main=True
-            ).exists()
-        ):
+        if not self.is_main and not ProductImage.objects.filter(product=self.product, is_main=True).exists():
             self.is_main = True
             ProductImage.objects.filter(pk=self.pk).update(is_main=True)
 
@@ -460,9 +440,7 @@ class ProductRecommendation(models.Model):
         ("seasonal", "계절 추천"),
         ("onboarding", "온보딩 추천"),
     ]
-    recommendation_type = models.CharField(
-        max_length=20, choices=RECOMMENDATION_TYPE_CHOICES
-    )
+    recommendation_type = models.CharField(max_length=20, choices=RECOMMENDATION_TYPE_CHOICES)
 
     # 캐시 관리
     created_at = models.DateTimeField(auto_now_add=True)
@@ -508,11 +486,7 @@ def ensure_main_image_exists(sender, instance, **kwargs):
     """메인 이미지 삭제 시 다른 이미지를 자동으로 메인으로 설정"""
     if instance.is_main:
         # 같은 제품의 다른 이미지 중 첫 번째를 메인으로 설정
-        next_image = (
-            ProductImage.objects.filter(product=instance.product)
-            .order_by("sort_order")
-            .first()
-        )
+        next_image = ProductImage.objects.filter(product=instance.product).order_by("sort_order").first()
 
         if next_image:
             next_image.is_main = True

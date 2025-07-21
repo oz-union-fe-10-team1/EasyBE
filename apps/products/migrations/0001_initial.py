@@ -231,9 +231,7 @@ class Migration(migrations.Migration):
                 ("volume_ml", models.IntegerField(help_text="용량 (ml)")),
                 (
                     "price",
-                    models.DecimalField(
-                        decimal_places=0, help_text="판매가격 (원)", max_digits=10
-                    ),
+                    models.DecimalField(decimal_places=0, help_text="판매가격 (원)", max_digits=10),
                 ),
                 (
                     "original_price",
@@ -333,9 +331,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "flavor_notes",
-                    models.CharField(
-                        blank=True, help_text="향미 특징 (예: 복숭아향)", max_length=100
-                    ),
+                    models.CharField(blank=True, help_text="향미 특징 (예: 복숭아향)", max_length=100),
                 ),
                 (
                     "short_description",
@@ -531,9 +527,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="product",
             name="taste_tags",
-            field=models.ManyToManyField(
-                blank=True, through="products.ProductTasteTag", to="products.tastetag"
-            ),
+            field=models.ManyToManyField(blank=True, through="products.ProductTasteTag", to="products.tastetag"),
         ),
         migrations.CreateModel(
             name="ProductLike",
@@ -635,15 +629,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="product",
-            index=models.Index(
-                fields=["status", "is_featured"], name="products_pr_status_28f1d7_idx"
-            ),
+            index=models.Index(fields=["status", "is_featured"], name="products_pr_status_28f1d7_idx"),
         ),
         migrations.AddIndex(
             model_name="product",
-            index=models.Index(
-                fields=["alcohol_type", "region"], name="products_pr_alcohol_025cf5_idx"
-            ),
+            index=models.Index(fields=["alcohol_type", "region"], name="products_pr_alcohol_025cf5_idx"),
         ),
         migrations.AddIndex(
             model_name="product",
@@ -651,14 +641,10 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="product",
-            index=models.Index(
-                fields=["-order_count"], name="products_pr_order_c_36e4a9_idx"
-            ),
+            index=models.Index(fields=["-order_count"], name="products_pr_order_c_36e4a9_idx"),
         ),
         migrations.AddIndex(
             model_name="product",
-            index=models.Index(
-                fields=["-average_rating"], name="products_pr_average_16068c_idx"
-            ),
+            index=models.Index(fields=["-average_rating"], name="products_pr_average_16068c_idx"),
         ),
     ]
