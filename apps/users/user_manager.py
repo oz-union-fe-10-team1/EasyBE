@@ -1,5 +1,6 @@
 from django.contrib.auth.models import BaseUserManager
 
+
 class UserManager(BaseUserManager):
     def create_user(self, nickname, provider, provider_id, **extra_fields):
         """
@@ -7,26 +8,21 @@ class UserManager(BaseUserManager):
         - 소셜 플랫폼에서 받은 정보로 자동 생성
         """
         if not nickname:
-            raise ValueError('닉네임은 필수입니다.')
+            raise ValueError("닉네임은 필수입니다.")
 
         if not provider or not provider_id:
-            raise ValueError('Provider와 Provider ID는 필수입니다.')
+            raise ValueError("Provider와 Provider ID는 필수입니다.")
 
         # 기본 역할을 USER로 설정
-        extra_fields.setdefault('role', 'USER')
+        extra_fields.setdefault("role", "USER")
 
         # 이메일이 있다면 정규화
-        email = extra_fields.get('email')
+        email = extra_fields.get("email")
         if email:
-            extra_fields['email'] = self.normalize_email(email)
+            extra_fields["email"] = self.normalize_email(email)
 
         # 소셜 로그인에서 받은 정보 처리
-        user = self.model(
-            nickname=nickname,
-            provider=provider,
-            provider_id=provider_id,
-            **extra_fields
-        )
+        user = self.model(nickname=nickname, provider=provider, provider_id=provider_id, **extra_fields)
         user.set_unusable_password()  # 소셜 로그인이므로 패스워드 불필요
         user.save(using=self._db)
         return user
@@ -41,10 +37,6 @@ class UserManager(BaseUserManager):
             return user, False
         except self.model.DoesNotExist:
             if defaults:
-                return self.create_user(
-                    provider=provider,
-                    provider_id=provider_id,
-                    **defaults
-                ), True
+                return self.create_user(provider=provider, provider_id=provider_id, **defaults), True
             else:
-                raise ValueError('새 사용자 생성을 위한 기본값이 필요합니다.')
+                raise ValueError("새 사용자 생성을 위한 기본값이 필요합니다.")

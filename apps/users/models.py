@@ -3,7 +3,6 @@ from django.db import models
 
 from apps.users.user_manager import UserManager
 
-# Create your models here.
 
 class User(AbstractBaseUser, PermissionsMixin):
     class Provider(models.TextChoices):
@@ -16,15 +15,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         ADMIN = "ADMIN", "관리자"
 
     # 소셜 로그인에서 가져올 정보
-    nickname = models.CharField(max_length=20, unique=True) # 소셜에서 제공 시 저장
-    email = models.EmailField(blank=True, null=True)  # 소셜에서 제공 시 저장
+    nickname = models.CharField(max_length=20, unique=True, default="temp_user")  # 기본값 추가
+    email = models.EmailField(blank=True, null=True)
 
     # 소셜 로그인
-    provider = models.CharField(max_length=10, choices=Provider.choices)
-    provider_id = models.CharField(max_length=255)
+    provider = models.CharField(max_length=10, choices=Provider.choices, default=Provider.KAKAO)  # 기본값 추가
+    provider_id = models.CharField(max_length=255, default="temp_id")  # 기본값 추가
 
     # 권한 및 상태
-    role = models.CharField(max_length=10, choices=Role.choices, default=Role.USER) #관리자는 장고 쉘을 이용해서 변경
+    role = models.CharField(max_length=10, choices=Role.choices, default=Role.USER)
 
     # 타임스탬프
     created_at = models.DateTimeField(auto_now_add=True)
@@ -32,18 +31,18 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'nickname'  # Django 인증에서 사용할 필드
-    REQUIRED_FIELDS = ['provider', 'provider_id']  # createsuperuser에서 요구할 필드들
+    USERNAME_FIELD = "nickname"
+    REQUIRED_FIELDS = ["provider", "provider_id"]
 
     class Meta:
         db_table = "users"
-        unique_together = ("provider", "provider_id")  # 유니크로 묶어서 동일한 소셜 계정 중복 방지
+        unique_together = ("provider", "provider_id")
         indexes = [
-            models.Index(fields=['email']),
-            models.Index(fields=['provider', 'provider_id']),
-            models.Index(fields=['role']),
-            models.Index(fields=['created_at']),
-            models.Index(fields=['-created_at']),  # 최신순 정렬용
+            models.Index(fields=["email"]),
+            models.Index(fields=["provider", "provider_id"]),
+            models.Index(fields=["role"]),
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["-created_at"]),
         ]
 
     def __str__(self) -> str:
@@ -59,8 +58,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def make_admin(self):
         self.role = self.Role.ADMIN
-        self.save(update_fields=['role', 'updated_at'])
+        self.save(update_fields=["role", "updated_at"])
 
     def make_user(self):
         self.role = self.Role.USER
-        self.save(update_fields=['role', 'updated_at'])
+        self.save(update_fields=["role", "updated_at"])

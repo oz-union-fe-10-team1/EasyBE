@@ -179,6 +179,7 @@ class Product(models.Model):
     min_stock_alert = models.IntegerField(default=10, help_text="최소 재고 알림 기준")
 
     # 맛 프로필 (표준 맛 지수 - 추천 알고리즘 핵심) - UI 요구사항에 맞게 0~5 범위
+    # TODO: 예시고 수정 필요 단맛, 신맛, 바디감, 탄산감, 쓴맛:누룩맛, 향
     sweetness_level = models.FloatField(
         default=0.0,
         validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
