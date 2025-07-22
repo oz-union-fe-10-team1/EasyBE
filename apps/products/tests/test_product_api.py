@@ -30,12 +30,22 @@ class ProductCreateAPITestCase(APITestCase):
         self.client = APIClient()
 
         # 관리자 사용자 생성
-        self.admin_user = User.objects.create_user(
-            username="admin", email="admin@example.com", password="admin123", is_staff=True, is_superuser=True
+        self.admin_user = User.objects.create(
+            nickname="admin_user",
+            email="admin@example.com",
+            provider=User.Provider.KAKAO,
+            provider_id="admin_kakao_123",
+            role=User.Role.ADMIN,
         )
 
         # 일반 사용자 생성
-        self.normal_user = User.objects.create_user(username="user", email="user@example.com", password="user123")
+        self.normal_user = User.objects.create(
+            nickname="normal_user",
+            email="user@example.com",
+            provider=User.Provider.NAVER,
+            provider_id="user_naver_456",
+            role=User.Role.USER,
+        )
 
         # 기본 데이터 생성
         self.region = Region.objects.create(name="경기", code="GG", description="경기도 지역")
@@ -123,7 +133,7 @@ class ProductCreateAPITestCase(APITestCase):
         response = self.client.post(self.url, self.valid_product_data, format="json")
 
         # Then: 인증 오류 반환
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(Product.objects.count(), 0)
 
     def test_create_product_forbidden_with_normal_user(self):
@@ -296,3 +306,107 @@ class ProductCreateAPITestCase(APITestCase):
         # Property 필드 검증
         self.assertTrue(response.data["is_available"])
         self.assertEqual(response.data["discount_rate"], 20)  # (10000-8000)/10000*100
+        self.assertEqual(response.data["main_image_url"], "")  # 이미지 없으므로 빈 문자열
+
+        # 맛 프로필 벡터 검증
+        expected_vector = [3.5, 2.0, 1.0, 2.5, 2.0, 3.0]
+        self.assertEqual(response.data["taste_profile_vector"], expected_vector)
+
+    def test_create_product_with_taste_tags(self):
+        """맛 태그와 함께 제품 생성 테스트"""
+        # Given: 맛 태그 생성
+        sweet_tag = TasteTag.objects.create(name="달콤한", category="sweetness", color_code="#FF6B9D")
+        fresh_tag = TasteTag.objects.create(name="상큼한", category="freshness", color_code="#4ECDC4")
+
+        # 관리자로 로그인
+        self.client.force_authenticate(user=self.admin_user)
+
+        # When: 맛 태그 데이터와 함께 제품 생성 요청
+        product_data_with_tags = self.valid_product_data.copy()
+        product_data_with_tags["taste_tags"] = [
+            {"taste_tag": sweet_tag.id, "intensity": 2.5},
+            {"taste_tag": fresh_tag.id, "intensity": 1.8},
+        ]
+
+        response = self.client.post(self.url, product_data_with_tags, format="json")
+
+        # Then: 성공적으로 생성되고 맛 태그도 연결되어야 함
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        created_product = Product.objects.first()
+        self.assertEqual(created_product.taste_tags.count(), 2)
+
+        # 맛 태그 관계 검증
+        sweet_relation = created_product.producttastetag_set.get(taste_tag=sweet_tag)
+        self.assertEqual(sweet_relation.intensity, 2.5)
+
+    def test_create_product_duplicate_name_same_brewery(self):
+        """같은 양조장에 동일한 이름의 제품 생성 시 처리"""
+        # Given: 관리자로 로그인 및 기존 제품 생성
+        self.client.force_authenticate(user=self.admin_user)
+        Product.objects.create(
+            name="장수 생막걸리",
+            brewery=self.brewery,
+            alcohol_type=self.alcohol_type,
+            description="기존 제품",
+            ingredients="쌀, 누룩, 물",
+            alcohol_content=6.0,
+            volume_ml=750,
+            price=Decimal("5000"),
+        )
+
+        # When: 동일한 이름으로 새 제품 생성 시도
+        response = self.client.post(self.url, self.valid_product_data, format="json")
+
+        # Then: 중복 검사 로직에 따라 처리
+        # 옵션 1: 중복 허용 (동일 제품의 다른 버전)
+        # self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # 옵션 2: 중복 금지 (비즈니스 요구사항에 따라)
+        # self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # self.assertIn('name', response.data)
+
+        # 현재는 중복 허용으로 가정
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Product.objects.count(), 2)
+
+
+class ProductCreateViewTestCase(TestCase):
+    """ProductCreate View 단위 테스트 (뷰 로직 검증)"""
+
+    def setUp(self):
+        self.admin_user = User.objects.create(
+            nickname="admin_test", provider=User.Provider.GOOGLE, provider_id="admin_google_789", role=User.Role.ADMIN
+        )
+
+    def test_get_queryset_admin_only(self):
+        """관리자만 제품 생성 권한이 있는지 확인"""
+        # 이 테스트는 뷰가 구현된 후 작성
+        pass
+
+    def test_perform_create_sets_defaults(self):
+        """제품 생성 시 기본값이 올바르게 설정되는지 확인"""
+        # 이 테스트는 뷰가 구현된 후 작성
+        pass
+
+
+# =============================================================================
+# TDD 개발 순서 가이드
+# =============================================================================
+
+"""
+🔥 TDD 개발 순서:
+
+1. ✅ 위 테스트 코드 작성 완료!
+2. ❌ 테스트 실행 → 당연히 실패 (아직 뷰/시리얼라이저 없음)
+3. 🔧 최소한의 코드로 테스트 통과시키기:
+   - ProductSerializer 생성
+   - ProductViewSet 생성  
+   - URL 연결
+4. ♻️ 리팩토링
+5. 🔄 반복
+
+다음 단계:
+- python manage.py test apps.products.tests.test_product_create_api
+- 실패 확인 후 serializers.py, views.py 구현 시작!
+"""

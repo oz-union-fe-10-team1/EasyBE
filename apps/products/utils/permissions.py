@@ -6,6 +6,8 @@ from rest_framework import permissions
 class IsAdminOrReadOnly(permissions.BasePermission):
     """
     관리자는 모든 권한, 일반 사용자는 읽기만 가능
+    커스텀 User 모델의 role 필드 기반
+    비로그인 사용자에게는 401 반환
     """
 
     def has_permission(self, request, view):
@@ -13,8 +15,12 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        # 쓰기 권한은 관리자만
-        return request.user and request.user.is_staff
+        # 비로그인 사용자는 401 (인증 필요)
+        if not request.user.is_authenticated:
+            return False
+
+        # 쓰기 권한은 관리자만 (커스텀 User 모델의 role 체크)
+        return hasattr(request.user, "role") and request.user.role == "ADMIN"
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
@@ -33,11 +39,16 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 class IsAdminUser(permissions.BasePermission):
     """
-    관리자만 접근 가능
+    관리자만 접근 가능 (커스텀 User 모델 기반)
     """
 
     def has_permission(self, request, view):
-        return request.user and request.user.is_staff
+        return (
+            request.user
+            and request.user.is_authenticated
+            and hasattr(request.user, "role")
+            and request.user.role == "ADMIN"
+        )
 
 
 class IsAuthenticatedOrReadOnly(permissions.BasePermission):

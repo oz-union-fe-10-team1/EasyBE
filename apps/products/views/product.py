@@ -69,7 +69,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         queryset = self.queryset
 
         # 관리자가 아닌 경우 활성 상태 제품만 조회
-        if not self.request.user.is_staff:
+        if not (
+            self.request.user.is_authenticated
+            and hasattr(self.request.user, "role")
+            and self.request.user.role == "ADMIN"
+        ):
             queryset = queryset.filter(status="active")
 
         return queryset
@@ -94,7 +98,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         # 조회수 증가 (관리자 제외)
-        if not request.user.is_staff:
+        if not (request.user.is_authenticated and hasattr(request.user, "role") and request.user.role == "ADMIN"):
             instance.increment_view_count()
 
         serializer = self.get_serializer(instance)

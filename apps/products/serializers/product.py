@@ -165,6 +165,18 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "taste_tags",
         ]
 
+        # 필수 필드 명시
+        extra_kwargs = {
+            "alcohol_type": {"required": True},
+            "name": {"required": True},
+            "brewery": {"required": True},
+            "description": {"required": True},
+            "ingredients": {"required": True},
+            "alcohol_content": {"required": True},
+            "volume_ml": {"required": True},
+            "price": {"required": True},
+        }
+
     def validate_price(self, value):
         """가격 유효성 검사"""
         if value < 0:
