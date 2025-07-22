@@ -72,10 +72,14 @@ class CartViewSet(viewsets.GenericViewSet):
         except CartItem.DoesNotExist:
             return Response({"detail": "제품을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
-        # 수량 업데이트
-        serializer = CartItemSerializer(instance=cart_item, data={"quantity": quantity}, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        if quantity <= 0:
+            # 수량이 0 이하이면 장바구니에서 아이템 제거
+            cart_item.delete()
+        else:
+            # 수량 업데이트
+            serializer = CartItemSerializer(instance=cart_item, data={"quantity": quantity}, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
 
         return Response(self.get_serializer(cart).data, status=status.HTTP_200_OK)
 
