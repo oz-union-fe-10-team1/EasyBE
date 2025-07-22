@@ -32,6 +32,7 @@ CUSTOM_APPS = [
     "apps.products",
     "apps.taste_test",
     "apps.common",
+    "apps.cart",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS
@@ -121,3 +122,5 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_USER_MODEL = "users.User"
