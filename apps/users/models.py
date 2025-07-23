@@ -3,6 +3,7 @@ from django.db import models
 
 from apps.users.user_manager import UserManager
 
+
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
         USER = "USER", "사용자"
