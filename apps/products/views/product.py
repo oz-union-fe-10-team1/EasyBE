@@ -4,6 +4,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from apps.products.models import Product
@@ -16,6 +17,14 @@ from apps.products.serializers import (
 
 from ..utils.filters import ProductFilter
 from ..utils.permissions import IsAdminOrReadOnly
+
+
+class ProductPagination(PageNumberPagination):
+    """제품 목록 페이지네이션"""
+
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -37,6 +46,9 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     # 권한: 조회는 모든 사용자, 생성/수정/삭제는 관리자만
     permission_classes = [IsAdminOrReadOnly]
+
+    # 페이지네이션 설정
+    pagination_class = ProductPagination
 
     # 필터링, 검색, 정렬
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -136,7 +148,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         product = self.get_object()
 
-        # 찜하기/해제 로직은 향후 구현
+        # TODO: 찜하기/해제 로직은 향후 구현
         # ProductLike 모델 활용
 
         return Response(

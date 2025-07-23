@@ -380,14 +380,106 @@ class ProductCreateViewTestCase(TestCase):
         )
 
     def test_get_queryset_admin_only(self):
-        """관리자만 제품 생성 권한이 있는지 확인"""
-        # 이 테스트는 뷰가 구현된 후 작성
-        pass
+        """관리자와 일반 사용자의 쿼리셋 차이 확인"""
+        from django.test import RequestFactory
+
+        from apps.products.models import AlcoholType, Brewery, Product, Region
+        from apps.products.views.product import ProductViewSet
+
+        # 기본 데이터 생성
+        region = Region.objects.create(name="경기", code="GG")
+        alcohol_type = AlcoholType.objects.create(name="생막걸리", category="rice_wine")
+        brewery = Brewery.objects.create(name="테스트양조장", region=region)
+
+        # 활성/비활성 제품 생성
+        active_product = Product.objects.create(
+            name="활성제품",
+            brewery=brewery,
+            alcohol_type=alcohol_type,
+            description="활성",
+            ingredients="쌀",
+            alcohol_content=6.0,
+            volume_ml=750,
+            price=5000,
+            status="active",
+        )
+        inactive_product = Product.objects.create(
+            name="비활성제품",
+            brewery=brewery,
+            alcohol_type=alcohol_type,
+            description="비활성",
+            ingredients="쌀",
+            alcohol_content=6.0,
+            volume_ml=750,
+            price=5000,
+            status="discontinued",
+        )
+
+        factory = RequestFactory()
+
+        # 관리자 요청
+        admin_request = factory.get("/api/products/")
+        admin_request.user = self.admin_user
+        admin_view = ProductViewSet()
+        admin_view.request = admin_request
+        admin_queryset = admin_view.get_queryset()
+
+        # 일반 사용자 생성 및 요청
+        normal_user = User.objects.create(
+            nickname="normal_test", provider=User.Provider.KAKAO, provider_id="normal_kakao_123", role=User.Role.USER
+        )
+        user_request = factory.get("/api/products/")
+        user_request.user = normal_user
+        user_view = ProductViewSet()
+        user_view.request = user_request
+        user_queryset = user_view.get_queryset()
+
+        # 검증
+        self.assertEqual(admin_queryset.count(), 2)  # 관리자는 모든 제품
+        self.assertEqual(user_queryset.count(), 1)  # 일반 사용자는 활성 제품만
 
     def test_perform_create_sets_defaults(self):
-        """제품 생성 시 기본값이 올바르게 설정되는지 확인"""
-        # 이 테스트는 뷰가 구현된 후 작성
-        pass
+        """제품 생성 시 기본값 설정 확인"""
+        from django.test import RequestFactory
+
+        from apps.products.models import AlcoholType, Brewery, Product, Region
+        from apps.products.serializers import ProductCreateSerializer
+        from apps.products.views.product import ProductViewSet
+
+        # 기본 데이터 생성
+        region = Region.objects.create(name="경기", code="GG")
+        alcohol_type = AlcoholType.objects.create(name="생막걸리", category="rice_wine")
+        brewery = Brewery.objects.create(name="테스트양조장", region=region)
+
+        product_data = {
+            "name": "기본값테스트제품",
+            "brewery": brewery.id,
+            "alcohol_type": alcohol_type.id,
+            "description": "기본값 테스트",
+            "ingredients": "쌀, 누룩",
+            "alcohol_content": 6.0,
+            "volume_ml": 750,
+            "price": "8000",
+        }
+
+        # ViewSet 테스트
+        factory = RequestFactory()
+        request = factory.post("/api/products/", product_data)
+        request.user = self.admin_user
+
+        view = ProductViewSet()
+        view.request = request
+        view.format_kwarg = None
+
+        serializer = ProductCreateSerializer(data=product_data)
+        self.assertTrue(serializer.is_valid())
+        view.perform_create(serializer)
+
+        # 생성된 제품의 기본값 확인
+        created_product = Product.objects.get(name="기본값테스트제품")
+        self.assertEqual(created_product.stock_quantity, 0)  # 기본값
+        self.assertEqual(created_product.status, "active")  # 기본값
+        self.assertEqual(created_product.sweetness_level, 0.0)  # 기본값
 
 
 # =============================================================================
