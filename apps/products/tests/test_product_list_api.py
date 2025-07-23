@@ -69,7 +69,11 @@ class ProductListAPITestCase(APITestCase):
             original_price=Decimal("10000"),
             stock_quantity=100,
             sweetness_level=4.0,
-            sourness_level=2.0,
+            acidity_level=2.0,
+            body_level=3.0,
+            carbonation_level=1.0,
+            bitterness_level=2.0,
+            aroma_level=4.0,
             status="active",
             view_count=100,
             order_count=50,
@@ -89,7 +93,11 @@ class ProductListAPITestCase(APITestCase):
             price=Decimal("12000"),
             stock_quantity=50,
             sweetness_level=2.0,
-            sourness_level=4.0,
+            acidity_level=4.0,
+            body_level=4.0,
+            carbonation_level=0.5,
+            bitterness_level=3.0,
+            aroma_level=3.5,
             status="active",
             view_count=200,
             order_count=30,
@@ -159,29 +167,21 @@ class ProductListAPITestCase(APITestCase):
 
         # 필수 응답 필드 검증
         required_fields = [
-            "id",
-            "name",
-            "brewery",
-            "alcohol_type",
-            "region",
-            "price",
-            "discount_rate",
-            "alcohol_content",
-            "volume_ml",
-            "main_image_url",
-            "is_available",
+            "id", "name", "brewery", "alcohol_type", "region",
+            "price", "discount_rate", "alcohol_content", "volume_ml",
+            "main_image_url", "is_available",
+
+            # 맛 프로필 필드
             "sweetness_level",
-            "sourness_level",
+            "acidity_level",
             "body_level",
-            "flavor_notes",
-            "short_description",
-            "view_count",
-            "order_count",
-            "like_count",
-            "average_rating",
-            "status",
-            "is_featured",
-            "created_at",
+            "carbonation_level",
+            "bitterness_level",
+            "aroma_level",
+
+            "flavor_notes", "short_description", "view_count",
+            "order_count", "like_count", "average_rating",
+            "status", "is_featured", "created_at",
         ]
 
         for field in required_fields:
@@ -305,6 +305,18 @@ class ProductListAPITestCase(APITestCase):
         results = response.data["results"]
         for product in results:
             self.assertGreaterEqual(product["sweetness_level"], 3.0)
+
+    def test_product_list_filter_by_acidity_profile(self):
+        """산미 필터링 테스트 (추가)"""
+        # When: 산미 범위로 필터링 (3.0 이상)
+        response = self.client.get(self.url, {"acidity_min": 3.0})
+
+        # Then: 산미 3.0 이상 제품만 조회
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        results = response.data["results"]
+        for product in results:
+            self.assertGreaterEqual(product["acidity_level"], 2.0)
 
     def test_product_list_filter_featured_only(self):
         """추천 제품만 필터링 테스트"""

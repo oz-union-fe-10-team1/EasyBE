@@ -69,12 +69,15 @@ class ProductCreateAPITestCase(APITestCase):
             "original_price": "10000",
             "stock_quantity": 100,
             "min_stock_alert": 10,
+
+            # 맛 프로필
             "sweetness_level": 3.5,
-            "sourness_level": 2.0,
-            "bitterness_level": 1.0,
-            "umami_level": 2.5,
-            "alcohol_strength": 2.0,
+            "acidity_level": 2.0,
             "body_level": 3.0,
+            "carbonation_level": 1.0,
+            "bitterness_level": 1.0,
+            "aroma_level": 4.0,
+
             "is_gift_suitable": True,
             "is_award_winning": False,
             "is_regional_specialty": True,
@@ -163,18 +166,22 @@ class ProductCreateAPITestCase(APITestCase):
 
         # When: 맛 프로필이 범위를 벗어난 데이터로 요청
         invalid_data = self.valid_product_data.copy()
-        invalid_data.update(
-            {
-                "sweetness_level": 6.0,  # 5.0 초과
-                "sourness_level": -1.0,  # 0.0 미만
-            }
-        )
+        invalid_data.update({
+            "sweetness_level": 6.0,
+            "acidity_level": -1.0,
+            "bitterness_level": 10.0,
+            "carbonation_level": -2.0,
+            "aroma_level": 7.0
+        })
         response = self.client.post(self.url, invalid_data, format="json")
 
         # Then: 유효성 검사 오류 반환
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("sweetness_level", response.data)
-        self.assertIn("sourness_level", response.data)
+        self.assertIn("acidity_level", response.data)
+        self.assertIn("bitterness_level", response.data)
+        self.assertIn("carbonation_level", response.data)
+        self.assertIn("aroma_level", response.data)
         self.assertEqual(Product.objects.count(), 0)
 
     def test_create_product_invalid_alcohol_content(self):
@@ -261,25 +268,21 @@ class ProductCreateAPITestCase(APITestCase):
         # Then: 올바른 응답 형식이어야 함
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # 필수 응답 필드 검증
+        # 필수 응답 필드 검증 (업데이트됨)
         required_fields = [
-            "id",
-            "name",
-            "brewery",
-            "alcohol_type",
-            "price",
-            "alcohol_content",
-            "volume_ml",
-            "description",
-            "sweetness_level",
-            "sourness_level",
-            "bitterness_level",
-            "is_available",
-            "discount_rate",
-            "main_image_url",
-            "taste_profile_vector",
-            "created_at",
-            "updated_at",
+            "id", "name", "brewery", "alcohol_type", "price",
+            "alcohol_content", "volume_ml", "description",
+
+            # 맛 프로필 필드 (새로운 구조)
+            "sweetness_level",  # 단맛
+            "acidity_level",  # 산미
+            "body_level",  # 바디감
+            "carbonation_level",  # 탄산감
+            "bitterness_level",  # 쓴맛:누룩맛
+            "aroma_level",  # 향
+
+            "is_available", "discount_rate", "main_image_url",
+            "similarity_vector", "created_at", "updated_at",
         ]
 
         for field in required_fields:
@@ -293,12 +296,16 @@ class ProductCreateAPITestCase(APITestCase):
 
         # Property 필드 검증
         self.assertTrue(response.data["is_available"])
-        self.assertEqual(response.data["discount_rate"], 20)  # (10000-8000)/10000*100
-        self.assertEqual(response.data["main_image_url"], "")  # 이미지 없으므로 빈 문자열
+        self.assertEqual(response.data["discount_rate"], 20)
+        self.assertEqual(response.data["main_image_url"], "")
 
-        # 맛 프로필 벡터 검증
-        expected_vector = [3.5, 2.0, 1.0, 2.5, 2.0, 3.0]
-        self.assertEqual(response.data["taste_profile_vector"], expected_vector)
+        # 맛 프로필 값 검증 (새로운 구조)
+        self.assertEqual(response.data["sweetness_level"], 3.5)
+        self.assertEqual(response.data["acidity_level"], 2.0)
+        self.assertEqual(response.data["body_level"], 3.0)
+        self.assertEqual(response.data["carbonation_level"], 1.0)
+        self.assertEqual(response.data["bitterness_level"], 1.0)
+        self.assertEqual(response.data["aroma_level"], 4.0)
 
     def test_create_product_with_taste_tags(self):
         """맛 태그와 함께 제품 생성 테스트"""
@@ -464,6 +471,9 @@ class ProductCreateViewTestCase(TestCase):
         self.assertEqual(created_product.stock_quantity, 0)  # 기본값
         self.assertEqual(created_product.status, "active")  # 기본값
         self.assertEqual(created_product.sweetness_level, 0.0)  # 기본값
+        self.assertEqual(created_product.acidity_level, 0.0)  # 기본값
+        self.assertEqual(created_product.carbonation_level, 0.0)  # 기본값
+        self.assertEqual(created_product.aroma_level, 0.0)  # 기본값
 
 
 # =============================================================================

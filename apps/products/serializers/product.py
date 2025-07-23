@@ -41,33 +41,18 @@ class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            "id",
-            "name",
-            "brewery",
-            "alcohol_type",
-            "region",
-            "price",
-            "original_price",
-            "discount_rate",
-            "alcohol_content",
-            "volume_ml",
-            "main_image_url",
-            "is_available",
-            "sweetness_level",
-            "sourness_level",
-            "body_level",
-            "flavor_notes",
-            "short_description",
-            "is_gift_suitable",
-            "is_award_winning",
-            "is_regional_specialty",
-            "view_count",
-            "order_count",
-            "like_count",
-            "average_rating",
-            "status",
-            "is_featured",
-            "created_at",
+            "id", "name", "brewery", "alcohol_type", "region",
+            "price", "original_price", "discount_rate", "alcohol_content", "volume_ml",
+            "main_image_url", "is_available",
+
+            # 맛 프로필 (완전한 필드들)
+            "sweetness_level", "acidity_level", "body_level",
+            "carbonation_level", "bitterness_level", "aroma_level",  # 추가
+
+            "flavor_notes", "short_description", "is_gift_suitable",
+            "is_award_winning", "is_regional_specialty", "view_count",
+            "order_count", "like_count", "average_rating",
+            "status", "is_featured", "created_at",
         ]
 
 
@@ -138,11 +123,11 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "min_stock_alert",
             # 맛 프로필
             "sweetness_level",
-            "sourness_level",
-            "bitterness_level",
-            "umami_level",
-            "alcohol_strength",
+            "acidity_level",
             "body_level",
+            "carbonation_level",
+            "bitterness_level",
+            "aroma_level",
             # 제품 특성
             "is_gift_suitable",
             "is_award_winning",
@@ -207,45 +192,39 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("재고 수량은 0 이상이어야 합니다.")
         return value
 
-    def validate_sweetness_level(self, value):
-        """단맛 지수 유효성 검사"""
-        if not 0.0 <= value <= 5.0:
-            raise serializers.ValidationError("단맛 지수는 0.0~5.0 사이여야 합니다.")
-        return value
+    def validate_taste_profile(self, attrs):
+        """맛 프로필 필드 통합 유효성 검사"""
+        taste_fields = {
+            'sweetness_level': '단맛',
+            'acidity_level': '산미',
+            'body_level': '바디감',
+            'carbonation_level': '탄산감',
+            'bitterness_level': '쓴맛:누룩맛',
+            'aroma_level': '향'
+        }
 
-    def validate_sourness_level(self, value):
-        """신맛 지수 유효성 검사"""
-        if not 0.0 <= value <= 5.0:
-            raise serializers.ValidationError("신맛 지수는 0.0~5.0 사이여야 합니다.")
-        return value
+        errors = {}
 
-    def validate_bitterness_level(self, value):
-        """쓴맛 지수 유효성 검사"""
-        if not 0.0 <= value <= 5.0:
-            raise serializers.ValidationError("쓴맛 지수는 0.0~5.0 사이여야 합니다.")
-        return value
+        for field_name, field_display in taste_fields.items():
+            value = attrs.get(field_name)
 
-    def validate_umami_level(self, value):
-        """감칠맛 지수 유효성 검사"""
-        if not 0.0 <= value <= 5.0:
-            raise serializers.ValidationError("감칠맛 지수는 0.0~5.0 사이여야 합니다.")
-        return value
+            # 값이 제공된 경우에만 검증
+            if value is not None:
+                if not isinstance(value, (int, float)):
+                    errors[field_name] = f"{field_display} 지수는 숫자여야 합니다."
+                elif not 0.0 <= value <= 5.0:
+                    errors[field_name] = f"{field_display} 지수는 0.0~5.0 사이여야 합니다."
 
-    def validate_alcohol_strength(self, value):
-        """알코올 강도 유효성 검사"""
-        if not 0.0 <= value <= 5.0:
-            raise serializers.ValidationError("알코올 강도는 0.0~5.0 사이여야 합니다.")
-        return value
+        if errors:
+            raise serializers.ValidationError(errors)
 
-    def validate_body_level(self, value):
-        """바디감 유효성 검사"""
-        if not 0.0 <= value <= 5.0:
-            raise serializers.ValidationError("바디감은 0.0~5.0 사이여야 합니다.")
-        return value
+        return attrs
 
     def validate(self, attrs):
         """전체 데이터 유효성 검사"""
         # 정가와 판매가 비교
+        attrs = self.validate_taste_profile(attrs)
+
         original_price = attrs.get("original_price")
         price = attrs.get("price")
 
@@ -300,11 +279,11 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             "stock_quantity",
             "min_stock_alert",
             "sweetness_level",
-            "sourness_level",
+            "acidity_level",
             "bitterness_level",
-            "umami_level",
-            "alcohol_strength",
+            "carbonation_level",
             "body_level",
+            "aroma_level",
             "is_gift_suitable",
             "is_award_winning",
             "is_regional_specialty",
@@ -328,12 +307,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
     validate_alcohol_content = ProductCreateSerializer.validate_alcohol_content
     validate_volume_ml = ProductCreateSerializer.validate_volume_ml
     validate_stock_quantity = ProductCreateSerializer.validate_stock_quantity
-    validate_sweetness_level = ProductCreateSerializer.validate_sweetness_level
-    validate_sourness_level = ProductCreateSerializer.validate_sourness_level
-    validate_bitterness_level = ProductCreateSerializer.validate_bitterness_level
-    validate_umami_level = ProductCreateSerializer.validate_umami_level
-    validate_alcohol_strength = ProductCreateSerializer.validate_alcohol_strength
-    validate_body_level = ProductCreateSerializer.validate_body_level
+    validate_taste_profile = ProductCreateSerializer.validate_taste_profile
     validate = ProductCreateSerializer.validate
 
     def update(self, instance, validated_data):
