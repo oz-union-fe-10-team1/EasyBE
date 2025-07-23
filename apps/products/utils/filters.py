@@ -1,6 +1,7 @@
 # apps/products/utils/filters.py
 
 import django_filters
+from django.db import models
 
 from apps.products.models import AlcoholType, Brewery, Product, ProductCategory, Region
 

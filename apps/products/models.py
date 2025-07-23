@@ -178,37 +178,36 @@ class Product(models.Model):
     stock_quantity = models.IntegerField(default=0, help_text="재고 수량")
     min_stock_alert = models.IntegerField(default=10, help_text="최소 재고 알림 기준")
 
-    # 맛 프로필 (표준 맛 지수 - 추천 알고리즘 핵심) - UI 요구사항에 맞게 0~5 범위
-    # TODO: 예시고 수정 필요 단맛, 신맛, 바디감, 탄산감, 쓴맛:누룩맛, 향
+    # 맛 프로필 (0~5 범위의 표준 맛 지수 - 추천 알고리즘 핵심)
     sweetness_level = models.FloatField(
         default=0.0,
         validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
         help_text="단맛 지수 (0.0 ~ 5.0)",
     )
-    sourness_level = models.FloatField(
+    acidity_level = models.FloatField(
         default=0.0,
         validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
-        help_text="신맛 지수 (0.0 ~ 5.0)",
-    )
-    bitterness_level = models.FloatField(
-        default=0.0,
-        validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
-        help_text="쓴맛 지수 (0.0 ~ 5.0)",
-    )
-    umami_level = models.FloatField(
-        default=0.0,
-        validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
-        help_text="감칠맛 지수 (0.0 ~ 5.0)",
-    )
-    alcohol_strength = models.FloatField(
-        default=0.0,
-        validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
-        help_text="알코올 강도 (0.0 ~ 5.0)",
+        help_text="산미 지수 (0.0 ~ 5.0)",
     )
     body_level = models.FloatField(
         default=0.0,
         validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
         help_text="바디감 (0.0: 가벼움, 5.0: 진함)",
+    )
+    carbonation_level = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
+        help_text="탄산감 (0.0 ~ 5.0)",
+    )
+    bitterness_level = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
+        help_text="쓴맛:누룩맛 지수 (0.0 ~ 5.0)",
+    )
+    aroma_level = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
+        help_text="향 지수 (0.0 ~ 5.0)",
     )
 
     # 제품 특성 정보 (UI 필터링 요구사항)
