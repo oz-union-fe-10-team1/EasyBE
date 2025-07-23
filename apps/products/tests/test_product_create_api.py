@@ -69,7 +69,6 @@ class ProductCreateAPITestCase(APITestCase):
             "original_price": "10000",
             "stock_quantity": 100,
             "min_stock_alert": 10,
-
             # 맛 프로필
             "sweetness_level": 3.5,
             "acidity_level": 2.0,
@@ -77,7 +76,6 @@ class ProductCreateAPITestCase(APITestCase):
             "carbonation_level": 1.0,
             "bitterness_level": 1.0,
             "aroma_level": 4.0,
-
             "is_gift_suitable": True,
             "is_award_winning": False,
             "is_regional_specialty": True,
@@ -166,13 +164,15 @@ class ProductCreateAPITestCase(APITestCase):
 
         # When: 맛 프로필이 범위를 벗어난 데이터로 요청
         invalid_data = self.valid_product_data.copy()
-        invalid_data.update({
-            "sweetness_level": 6.0,
-            "acidity_level": -1.0,
-            "bitterness_level": 10.0,
-            "carbonation_level": -2.0,
-            "aroma_level": 7.0
-        })
+        invalid_data.update(
+            {
+                "sweetness_level": 6.0,
+                "acidity_level": -1.0,
+                "bitterness_level": 10.0,
+                "carbonation_level": -2.0,
+                "aroma_level": 7.0,
+            }
+        )
         response = self.client.post(self.url, invalid_data, format="json")
 
         # Then: 유효성 검사 오류 반환
@@ -270,9 +270,14 @@ class ProductCreateAPITestCase(APITestCase):
 
         # 필수 응답 필드 검증 (업데이트됨)
         required_fields = [
-            "id", "name", "brewery", "alcohol_type", "price",
-            "alcohol_content", "volume_ml", "description",
-
+            "id",
+            "name",
+            "brewery",
+            "alcohol_type",
+            "price",
+            "alcohol_content",
+            "volume_ml",
+            "description",
             # 맛 프로필 필드 (새로운 구조)
             "sweetness_level",  # 단맛
             "acidity_level",  # 산미
@@ -280,9 +285,12 @@ class ProductCreateAPITestCase(APITestCase):
             "carbonation_level",  # 탄산감
             "bitterness_level",  # 쓴맛:누룩맛
             "aroma_level",  # 향
-
-            "is_available", "discount_rate", "main_image_url",
-            "similarity_vector", "created_at", "updated_at",
+            "is_available",
+            "discount_rate",
+            "main_image_url",
+            "similarity_vector",
+            "created_at",
+            "updated_at",
         ]
 
         for field in required_fields:

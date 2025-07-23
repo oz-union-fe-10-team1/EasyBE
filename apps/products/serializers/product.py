@@ -41,18 +41,37 @@ class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            "id", "name", "brewery", "alcohol_type", "region",
-            "price", "original_price", "discount_rate", "alcohol_content", "volume_ml",
-            "main_image_url", "is_available",
-
+            "id",
+            "name",
+            "brewery",
+            "alcohol_type",
+            "region",
+            "price",
+            "original_price",
+            "discount_rate",
+            "alcohol_content",
+            "volume_ml",
+            "main_image_url",
+            "is_available",
             # 맛 프로필 (완전한 필드들)
-            "sweetness_level", "acidity_level", "body_level",
-            "carbonation_level", "bitterness_level", "aroma_level",  # 추가
-
-            "flavor_notes", "short_description", "is_gift_suitable",
-            "is_award_winning", "is_regional_specialty", "view_count",
-            "order_count", "like_count", "average_rating",
-            "status", "is_featured", "created_at",
+            "sweetness_level",
+            "acidity_level",
+            "body_level",
+            "carbonation_level",
+            "bitterness_level",
+            "aroma_level",  # 추가
+            "flavor_notes",
+            "short_description",
+            "is_gift_suitable",
+            "is_award_winning",
+            "is_regional_specialty",
+            "view_count",
+            "order_count",
+            "like_count",
+            "average_rating",
+            "status",
+            "is_featured",
+            "created_at",
         ]
 
 
@@ -195,12 +214,12 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     def validate_taste_profile(self, attrs):
         """맛 프로필 필드 통합 유효성 검사"""
         taste_fields = {
-            'sweetness_level': '단맛',
-            'acidity_level': '산미',
-            'body_level': '바디감',
-            'carbonation_level': '탄산감',
-            'bitterness_level': '쓴맛:누룩맛',
-            'aroma_level': '향'
+            "sweetness_level": "단맛",
+            "acidity_level": "산미",
+            "body_level": "바디감",
+            "carbonation_level": "탄산감",
+            "bitterness_level": "쓴맛:누룩맛",
+            "aroma_level": "향",
         }
 
         errors = {}

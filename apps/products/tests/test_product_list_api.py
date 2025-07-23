@@ -167,10 +167,17 @@ class ProductListAPITestCase(APITestCase):
 
         # 필수 응답 필드 검증
         required_fields = [
-            "id", "name", "brewery", "alcohol_type", "region",
-            "price", "discount_rate", "alcohol_content", "volume_ml",
-            "main_image_url", "is_available",
-
+            "id",
+            "name",
+            "brewery",
+            "alcohol_type",
+            "region",
+            "price",
+            "discount_rate",
+            "alcohol_content",
+            "volume_ml",
+            "main_image_url",
+            "is_available",
             # 맛 프로필 필드
             "sweetness_level",
             "acidity_level",
@@ -178,10 +185,15 @@ class ProductListAPITestCase(APITestCase):
             "carbonation_level",
             "bitterness_level",
             "aroma_level",
-
-            "flavor_notes", "short_description", "view_count",
-            "order_count", "like_count", "average_rating",
-            "status", "is_featured", "created_at",
+            "flavor_notes",
+            "short_description",
+            "view_count",
+            "order_count",
+            "like_count",
+            "average_rating",
+            "status",
+            "is_featured",
+            "created_at",
         ]
 
         for field in required_fields:
