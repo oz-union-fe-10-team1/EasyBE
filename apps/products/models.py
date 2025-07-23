@@ -1,6 +1,7 @@
 import uuid
 
 from django.conf import settings
+
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models, transaction
 from django.db.models.signals import post_delete
