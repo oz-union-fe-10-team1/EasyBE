@@ -354,6 +354,7 @@ requires-dist = [
     { name = "django-filter", specifier = ">=25.1" },
     { name = "django-extensions", specifier = ">=4.1" },
     { name = "django-stubs", extras = ["compatible-mypy"], specifier = ">=5.2.2" },
+    { name = "djangorestframework", specifier = "==3.16.0" },
     { name = "djangorestframework", specifier = ">=3.16.0" },
     { name = "djangorestframework-simplejwt", specifier = ">=5.5.1" },
     { name = "gunicorn", specifier = "==23.0.0" },

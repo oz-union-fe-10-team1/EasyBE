@@ -23,4 +23,5 @@ urlpatterns = [
     path("api/v1/auth/", include("apps.users.urls")),
     # API URL 패턴
     path("api/", include("apps.products.urls")),
+    path("api/cart/", include("apps.cart.urls")),
 ]
