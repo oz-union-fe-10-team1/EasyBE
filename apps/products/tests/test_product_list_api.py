@@ -24,14 +24,8 @@ class ProductListAPITestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
 
-        # 사용자 생성
-        self.user = User.objects.create_user(
-            nickname="testuser",
-            email="user@example.com",
-            provider=User.Provider.KAKAO,
-            provider_id="admin_kakao_123",
-            role=User.Role.USER,
-        )
+        # 사용자 생성 (간소화됨)
+        self.user = User.objects.create(nickname="testuser", email="user@example.com", role=User.Role.USER)
 
         self.region_gg = Region.objects.create(name="경기", code="GG")
         self.region_jl = Region.objects.create(name="전라", code="JL")

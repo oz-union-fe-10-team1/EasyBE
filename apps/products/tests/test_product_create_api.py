@@ -29,23 +29,11 @@ class ProductCreateAPITestCase(APITestCase):
         # API 클라이언트
         self.client = APIClient()
 
-        # 관리자 사용자 생성
-        self.admin_user = User.objects.create(
-            nickname="admin_user",
-            email="admin@example.com",
-            provider=User.Provider.KAKAO,
-            provider_id="admin_kakao_123",
-            role=User.Role.ADMIN,
-        )
+        # 관리자 사용자
+        self.admin_user = User.objects.create(nickname="admin_test", email="admin@example.com", role=User.Role.ADMIN)
 
-        # 일반 사용자 생성
-        self.normal_user = User.objects.create(
-            nickname="normal_user",
-            email="user@example.com",
-            provider=User.Provider.NAVER,
-            provider_id="user_naver_456",
-            role=User.Role.USER,
-        )
+        # 일반 사용자
+        self.normal_user = User.objects.create(nickname="normal_test", email="normal@example.com", role=User.Role.USER)
 
         # 기본 데이터 생성
         self.region = Region.objects.create(name="경기", code="GG", description="경기도 지역")
@@ -375,9 +363,7 @@ class ProductCreateViewTestCase(TestCase):
     """ProductCreate View 단위 테스트 (뷰 로직 검증)"""
 
     def setUp(self):
-        self.admin_user = User.objects.create(
-            nickname="admin_test", provider=User.Provider.GOOGLE, provider_id="admin_google_789", role=User.Role.ADMIN
-        )
+        self.admin_user = User.objects.create(nickname="admin_test", role=User.Role.ADMIN)
 
     def test_get_queryset_admin_only(self):
         """관리자와 일반 사용자의 쿼리셋 차이 확인"""
@@ -425,9 +411,7 @@ class ProductCreateViewTestCase(TestCase):
         admin_queryset = admin_view.get_queryset()
 
         # 일반 사용자 생성 및 요청
-        normal_user = User.objects.create(
-            nickname="normal_test", provider=User.Provider.KAKAO, provider_id="normal_kakao_123", role=User.Role.USER
-        )
+        normal_user = User.objects.create(nickname="normal_test", role=User.Role.USER)
         user_request = factory.get("/api/products/")
         user_request.user = normal_user
         user_view = ProductViewSet()
