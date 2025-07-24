@@ -8,7 +8,10 @@ class Cart(models.Model):
         on_delete=models.CASCADE,
         related_name="cart",
         verbose_name="사용자",
+        null=True,
+        blank=True,
     )
+    session_key = models.CharField(max_length=40, null=True, blank=True, verbose_name="세션 키")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")
 

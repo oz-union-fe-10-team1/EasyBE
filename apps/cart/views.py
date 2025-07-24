@@ -1,6 +1,6 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.cart.models import Cart, CartItem
@@ -9,19 +9,34 @@ from apps.cart.serializers import CartItemSerializer, CartSerializer
 
 class CartViewSet(viewsets.GenericViewSet):
     serializer_class = CartSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # 비로그인 사용자도 이용가능하게 변경
 
     def get_queryset(self):
         """
-        현재 인증된 사용자의 장바구니만 필터링하여 반환합니다.
+        현재 사용자의 장바구니를 필터링합니다.
         """
-        return Cart.objects.filter(user=self.request.user)
+        if self.request.user.is_authenticated:
+            return Cart.objects.filter(user=self.request.user)
+        # 비로그인 사용자는 세션 키를 기반으로 필터링
+        session_key = self.request.session.session_key
+        if not session_key:
+            return Cart.objects.none()  # 세션이 없으면 빈 쿼리셋 반환
+        return Cart.objects.filter(session_key=session_key)
 
     def get_object(self):
         """
-        현재 인증된 사용자의 장바구니를 가져오거나, 없으면 새로 생성합니다.
+        사용자의 장바구니를 가져오거나 생성합니다.
+        로그인한 경우: user 기준
+        비로그인 경우: session_key 기준
         """
-        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        if self.request.user.is_authenticated:
+            cart, created = Cart.objects.get_or_create(user=self.request.user)
+        else:
+            session_key = self.request.session.session_key
+            if not session_key:
+                self.request.session.create()
+                session_key = self.request.session.session_key
+            cart, created = Cart.objects.get_or_create(session_key=session_key, defaults={"user": None})
         return cart
 
     def retrieve(self, request, *args, **kwargs):
