@@ -1,5 +1,6 @@
 # apps/users/services.py
 import random
+from typing import Any, Dict, Tuple
 
 from django.db import transaction
 
@@ -9,7 +10,7 @@ from .models import SocialAccount, User
 class SocialAuthService:
     @staticmethod
     @transaction.atomic
-    def authenticate_social_user(provider, provider_id, user_info):
+    def authenticate_social_user(provider: str, provider_id: str, user_info: Dict[str, Any]) -> Tuple[User, str]:
         """
         소셜 로그인 인증 + 계정 통합 처리
         """
