@@ -15,6 +15,10 @@ class NaverLoginSerializer(serializers.Serializer):
     code = serializers.CharField(help_text="네이버에서 받은 authorization code")
     state = serializers.CharField(help_text="네이버에서 받은 state 값")
 
+class GoogleLoginSerializer(serializers.Serializer):
+    """구글 로그인 요청 데이터"""
+    code = serializers.CharField(help_text="구글에서 받은 authorization code")
+
 
 class UserSerializer(serializers.ModelSerializer):
     """사용자 정보 응답"""
