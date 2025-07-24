@@ -23,9 +23,6 @@ DJANGO_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
-THIRD_PARTY_APPS = [
-    "rest_framework",
-]
 
 CUSTOM_APPS = [
     "apps.users",
@@ -40,6 +37,7 @@ CUSTOM_APPS = [
 
 THIRD_PARTY_APPS = [
     "rest_framework",
+    "drf_yasg",
     "rest_framework_simplejwt",
     #'drf_spectacular',
     #'django_filters',

@@ -53,7 +53,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     # 필터링, 검색, 정렬
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
-    search_fields = ["name", "description", "flavor_notes", "brewery__name"]
+    search_fields = ["name", "description", "flavor_notes"]
     ordering_fields = [
         "price",
         "alcohol_content",
@@ -118,46 +118,154 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def popular(self, request):
-        """인기 제품 목록"""
-        popular_products = self.get_queryset().filter(status="active").order_by("-order_count", "-view_count")[:20]
+        """인기 제품 목록 (주문수 + 조회수 기준)"""
+        popular_products = self.get_queryset().filter(status="active").order_by("-order_count", "-view_count")
+
+        # 페이지네이션 적용
+        page = self.paginate_queryset(popular_products)
+        if page is not None:
+            serializer = ProductListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
         serializer = ProductListSerializer(popular_products, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"])
     def featured(self, request):
-        """추천 제품 목록"""
-        featured_products = self.get_queryset().filter(status="active", is_featured=True).order_by("-created_at")[:10]
+        """추천 제품 목록 (is_featured=True)"""
+        featured_products = self.get_queryset().filter(status="active", is_featured=True).order_by("-created_at")
+
+        # 페이지네이션 적용
+        page = self.paginate_queryset(featured_products)
+        if page is not None:
+            serializer = ProductListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
         serializer = ProductListSerializer(featured_products, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"])
+    def award_winning(self, request):
+        """수상 제품 목록 (is_award_winning=True)"""
+        award_products = self.get_queryset().filter(status="active", is_award_winning=True).order_by("-created_at")
+
+        # 페이지네이션 적용
+        page = self.paginate_queryset(award_products)
+        if page is not None:
+            serializer = ProductListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = ProductListSerializer(award_products, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"])
+    def regional_specialty(self, request):
+        """지역 특산물 제품 목록 (is_regional_specialty=True)"""
+        regional_products = (
+            self.get_queryset().filter(status="active", is_regional_specialty=True).order_by("-created_at")
+        )
+
+        # 페이지네이션 적용
+        page = self.paginate_queryset(regional_products)
+        if page is not None:
+            serializer = ProductListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = ProductListSerializer(regional_products, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"])
+    def by_type(self, request):
+        """주류 타입별 제품 목록"""
+        alcohol_type_id = request.query_params.get("alcohol_type")
+
+        queryset = self.get_queryset().filter(status="active")
+
+        if alcohol_type_id:
+            try:
+                alcohol_type_id = int(alcohol_type_id)
+                queryset = queryset.filter(alcohol_type_id=alcohol_type_id)
+            except (ValueError, TypeError):
+                # 잘못된 타입 ID인 경우 빈 결과 반환
+                queryset = queryset.none()
+
+        queryset = queryset.order_by("-created_at")
+
+        # 페이지네이션 적용
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = ProductListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = ProductListSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"])
     def new(self, request):
-        """신제품 목록"""
-        new_products = self.get_queryset().filter(status="active").order_by("-created_at")[:20]
+        """신제품 목록 (최신순)"""
+        new_products = self.get_queryset().filter(status="active").order_by("-created_at")
+
+        # 페이지네이션 적용
+        page = self.paginate_queryset(new_products)
+        if page is not None:
+            serializer = ProductListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
         serializer = ProductListSerializer(new_products, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated])
+    def liked(self, request):
+        """내가 좋아요한 제품 목록"""
+        from apps.products.models import ProductLike
+
+        # 사용자가 좋아요한 제품들 조회
+        liked_product_ids = ProductLike.objects.filter(user=request.user).values_list("product_id", flat=True)
+
+        liked_products = (
+            self.get_queryset().filter(id__in=liked_product_ids, status="active").order_by("-productlike__created_at")
+        )  # 최신 좋아요 순
+
+        # 페이지네이션 적용
+        page = self.paginate_queryset(liked_products)
+        if page is not None:
+            serializer = ProductListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = ProductListSerializer(liked_products, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def like(self, request, pk=None):
-        """제품 찜하기/찜 해제"""
-        if not request.user.is_authenticated:
-            return Response({"error": "로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
+        """제품 좋아요/취소 토글"""
+        from django.db import models
+
+        from apps.products.models import ProductLike
 
         product = self.get_object()
 
-        # TODO: 찜하기/해제 로직은 향후 구현
-        # ProductLike 모델 활용
+        # 기존 좋아요 확인
+        like_obj, created = ProductLike.objects.get_or_create(user=request.user, product=product)
 
-        return Response(
-            {
-                "message": "찜하기 기능은 향후 구현 예정입니다.",
-                "product_id": str(product.id),
-                "user_id": request.user.id,
-            }
-        )
+        if created:
+            # 새로운 좋아요 생성
+            Product.objects.filter(id=product.id).update(like_count=models.F("like_count") + 1)
+            product.refresh_from_db()
+
+            return Response(
+                {"message": "제품을 좋아요했습니다.", "liked": True, "like_count": product.like_count},
+                status=status.HTTP_201_CREATED,
+            )
+        else:
+            # 기존 좋아요 취소
+            like_obj.delete()
+            Product.objects.filter(id=product.id).update(like_count=models.F("like_count") - 1)
+            product.refresh_from_db()
+
+            return Response(
+                {"message": "좋아요를 취소했습니다.", "liked": False, "like_count": product.like_count},
+                status=status.HTTP_200_OK,
+            )
 
     @action(detail=True, methods=["get"])
     def similar(self, request, pk=None):
@@ -192,11 +300,11 @@ class ProductViewSet(viewsets.ModelViewSet):
             },
             "taste_ranges": {
                 "sweetness": {"min": 0.0, "max": 5.0},
-                "sourness": {"min": 0.0, "max": 5.0},
+                "acidity": {"min": 0.0, "max": 5.0},  # sourness → acidity로 수정
                 "bitterness": {"min": 0.0, "max": 5.0},
-                "umami": {"min": 0.0, "max": 5.0},
-                "alcohol_strength": {"min": 0.0, "max": 5.0},
                 "body": {"min": 0.0, "max": 5.0},
+                "carbonation": {"min": 0.0, "max": 5.0},
+                "aroma": {"min": 0.0, "max": 5.0},
             },
             "regions": list(
                 queryset.values_list("region__name", flat=True).distinct().exclude(region__name__isnull=True)
