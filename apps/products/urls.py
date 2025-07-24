@@ -12,9 +12,6 @@ router.register(r"products", ProductViewSet, basename="product")
 urlpatterns = [
     # DRF Router URLs
     path("", include(router.urls)),
-    # 추가 커스텀 URL들 (향후 확장용)
-    # path('products/recommend/', RecommendationView.as_view(), name='product-recommend'),
-    # path('products/search/', ProductSearchView.as_view(), name='product-search'),
 ]
 
 # URL 패턴 확인용
