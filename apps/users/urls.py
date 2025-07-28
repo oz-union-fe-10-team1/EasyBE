@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import KakaoLoginView, NaverLoginView, GoogleLoginView
+from .views import GoogleLoginView, KakaoLoginView, NaverLoginView
 
 urlpatterns = [
     path("login/kakao/", KakaoLoginView.as_view(), name="kakao_login"),

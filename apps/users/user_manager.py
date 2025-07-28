@@ -1,11 +1,12 @@
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 from django.contrib.auth.models import BaseUserManager
 
 if TYPE_CHECKING:
-    from .models import User, SocialAccount
+    from .models import SocialAccount, User
 
-class UserManager(BaseUserManager['User']):
+
+class UserManager(BaseUserManager["User"]):
     def create_user(self, nickname: str, email: Optional[str] = None, **extra_fields: Any):
         """
         기본 사용자 생성 (소셜 계정 정보는 별도 처리)
@@ -20,11 +21,7 @@ class UserManager(BaseUserManager['User']):
         if email:
             extra_fields["email"] = self.normalize_email(email)
 
-        user_fields = {
-            'nickname': nickname,
-            'email': email,
-            'role': extra_fields.get('role', 'USER')
-        }
+        user_fields = {"nickname": nickname, "email": email, "role": extra_fields.get("role", "USER")}
 
         # 소셜 로그인에서 받은 정보 처리
         user = self.model(**user_fields)
@@ -36,11 +33,11 @@ class UserManager(BaseUserManager['User']):
         """
         슈퍼유저 생성 (Django admin용)
         """
-        user = self.create_user(nickname=nickname, email=email, role='ADMIN')
+        user = self.create_user(nickname=nickname, email=email, role="ADMIN")
 
         # PermissionsMixin 필드들은 User 인스턴스 생성 후 설정
         user.is_superuser = True
-        user.save(update_fields=['is_superuser'])
+        user.save(update_fields=["is_superuser"])
 
         return user
 

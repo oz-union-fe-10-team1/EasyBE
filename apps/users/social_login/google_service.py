@@ -1,5 +1,6 @@
 # apps/users/social_login/google_service.py
-from typing import Dict, Any
+from typing import Any, Dict
+
 import requests
 from django.conf import settings
 
@@ -11,6 +12,7 @@ class GoogleService:
         1단계: authorization code로 access token 요청
         """
         url = "https://oauth2.googleapis.com/token"
+        # TODO : authorization_code 받을 때 인코딩 된 '/'(%2F) 디코딩해서 구글에 보내줘야함
         data = {
             "grant_type": "authorization_code",
             "client_id": settings.GOOGLE_CLIENT_ID,
