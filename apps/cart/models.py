@@ -3,15 +3,12 @@ from django.db import models
 
 
 class Cart(models.Model):
-    user = models.OneToOneField(
+    customer = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="cart",
-        verbose_name="사용자",
-        null=True,
-        blank=True,
+        verbose_name="고객",
     )
-    session_key = models.CharField(max_length=40, null=True, blank=True, verbose_name="세션 키")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")
 
@@ -20,7 +17,7 @@ class Cart(models.Model):
         verbose_name_plural = "장바구니 목록"
 
     def __str__(self):
-        return f"{self.user.username}의 장바구니"
+        return f"{self.customer.username}의 장바구니"
 
     @property
     def total_price(self):
