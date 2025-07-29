@@ -1,42 +1,63 @@
+from typing import TYPE_CHECKING, Any, Optional
+
 from django.contrib.auth.models import BaseUserManager
 
+if TYPE_CHECKING:
+    from .models import SocialAccount, User
 
-class UserManager(BaseUserManager):
-    def create_user(self, nickname, provider, provider_id, **extra_fields):
+
+class UserManager(BaseUserManager["User"]):
+    def create_user(self, nickname: str, email: Optional[str] = None, **extra_fields: Any):
         """
-        소셜 로그인 사용자 생성
-        - 소셜 플랫폼에서 받은 정보로 자동 생성
+        기본 사용자 생성 (소셜 계정 정보는 별도 처리)
         """
         if not nickname:
             raise ValueError("닉네임은 필수입니다.")
-
-        if not provider or not provider_id:
-            raise ValueError("Provider와 Provider ID는 필수입니다.")
 
         # 기본 역할을 USER로 설정
         extra_fields.setdefault("role", "USER")
 
         # 이메일이 있다면 정규화
-        email = extra_fields.get("email")
         if email:
             extra_fields["email"] = self.normalize_email(email)
 
+        user_fields = {"nickname": nickname, "email": email, "role": extra_fields.get("role", "USER")}
+
         # 소셜 로그인에서 받은 정보 처리
-        user = self.model(nickname=nickname, provider=provider, provider_id=provider_id, **extra_fields)
+        user = self.model(**user_fields)
         user.set_unusable_password()  # 소셜 로그인이므로 패스워드 불필요
         user.save(using=self._db)
         return user
 
-    def get_or_create_social_user(self, provider, provider_id, defaults=None):
+    def create_superuser(self, nickname: str, email: Optional[str] = None, **extra_fields: Any):
         """
-        소셜 로그인 시 사용자 조회 또는 생성
-        - OAuth 콜백에서 사용할 헬퍼 메소드
+        슈퍼유저 생성 (Django admin용)
+        """
+        user = self.create_user(nickname=nickname, email=email, role="ADMIN")
+
+        # PermissionsMixin 필드들은 User 인스턴스 생성 후 설정
+        user.is_superuser = True
+        user.save(update_fields=["is_superuser"])
+
+        return user
+
+    def get_by_social_account(self, provider: str, provider_id: str):
+        """
+        소셜 계정으로 사용자 조회
+        """
+        from .models import SocialAccount  # 순환 임포트 방지
+
+        try:
+            social_account = SocialAccount.objects.get(provider=provider, provider_id=provider_id)
+            return social_account.user
+        except SocialAccount.DoesNotExist:
+            return None
+
+    def get_by_email(self, email: str):
+        """
+        이메일로 사용자 조회
         """
         try:
-            user = self.get(provider=provider, provider_id=provider_id)
-            return user, False
+            return self.get(email=email)
         except self.model.DoesNotExist:
-            if defaults:
-                return self.create_user(provider=provider, provider_id=provider_id, **defaults), True
-            else:
-                raise ValueError("새 사용자 생성을 위한 기본값이 필요합니다.")
+            return None

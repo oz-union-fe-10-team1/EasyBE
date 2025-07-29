@@ -43,6 +43,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
     #'drf_spectacular',
     #'django_filters',
+    "django_extensions",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS + THIRD_PARTY_APPS
@@ -143,3 +144,8 @@ KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 NAVER_REDIRECT_URI = os.getenv("NAVER_REDIRECT_URI")
+
+# 구글 로그인 설정
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
