@@ -21,18 +21,20 @@ class OrderViewSet(viewsets.GenericViewSet):
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
     def list(self, request, *args, **kwargs):
+        """
+        주문 목록을 조회합니다.
+        GET /api/orders/list/
+        """
         queryset = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(queryset, many=True) # get_serializer_class 사용
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @action(detail=False, methods=["post"], url_path="create-from-cart")
-    def create_order_from_cart(self, request):
+    def create(self, request, *args, **kwargs):
+        """
+        장바구니 기반으로 주문을 생성합니다.
+        POST /api/orders/
+        """
         user = request.user
         try:
             cart = Cart.objects.get(user=user)
