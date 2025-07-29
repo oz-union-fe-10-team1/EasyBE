@@ -9,9 +9,6 @@ class Cart(models.Model):
         related_name="cart",
         verbose_name="고객",
     )
-    pickup_store_name = models.CharField(max_length=100, null=True, blank=True, verbose_name="픽업 매장 이름")
-    pickup_store_phone = models.CharField(max_length=20, null=True, blank=True, verbose_name="매장 전화번호")
-    pickup_datetime = models.DateTimeField(null=True, blank=True, verbose_name="픽업 일시")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")
 
