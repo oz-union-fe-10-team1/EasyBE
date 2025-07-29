@@ -98,3 +98,16 @@ class CartViewSet(viewsets.GenericViewSet):
             return Response({"detail": "제품을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(self.get_serializer(cart).data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["patch"], url_path="update-pickup")
+    def update_pickup_info(self, request):
+        """
+        장바구니의 픽업 정보를 업데이트합니다.
+        PATCH /api/cart/update-pickup/
+        요청 본문: {"pickup_store_name": "<매장명>", "pickup_store_phone": "<연락처>", "pickup_datetime": "<YYYY-MM-DDTHH:MM:SSZ>"}
+        """
+        cart = self.get_object()
+        serializer = self.get_serializer(cart, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
