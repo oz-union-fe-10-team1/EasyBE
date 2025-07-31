@@ -1,25 +1,23 @@
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated # AllowAny 추가
-from rest_framework.response import Response
 from django.db import transaction
+from rest_framework import status, viewsets
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
-from apps.cart.models import Cart, CartItem
+from apps.cart.models import Cart
 from apps.orders.models import Order, OrderItem
 from apps.orders.serializers import OrderSerializer
 from apps.products.models import Product
 
 
-from rest_framework.authentication import SessionAuthentication # 추가
-
-
 class OrderViewSet(viewsets.GenericViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = [SessionAuthentication] # 추가
+    # authentication_classes를 명시하지 않아 settings.py의 기본값을 따르도록 함
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+        return Order.objects.filter(user=self.request.user).prefetch_related(
+            'items__feedback'
+        )
 
     def list(self, request, *args, **kwargs):
         """
@@ -52,24 +50,18 @@ class OrderViewSet(viewsets.GenericViewSet):
 
                 order_items = []
                 for cart_item in cart_items:
-                    # 주문 당시의 상품 가격을 저장
                     order_items.append(
                         OrderItem(
                             order=order,
                             product=cart_item.product,
                             quantity=cart_item.quantity,
-                            price=cart_item.product.price,  # 현재 상품 가격을 저장
+                            price=cart_item.product.price,
                         )
                     )
-                    # 재고 감소 로직 (선택 사항, 필요 시 추가)
-                    # cart_item.product.stock_quantity -= cart_item.quantity
-                    # cart_item.product.save()
-
                 OrderItem.objects.bulk_create(order_items)
 
-                # 장바구니 비우기
                 cart.items.all().delete()
-                cart.delete() # 장바구니 자체도 삭제
+                cart.delete()
 
             serializer = self.get_serializer(order)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
