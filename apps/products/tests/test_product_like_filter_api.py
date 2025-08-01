@@ -91,7 +91,7 @@ class ProductLikeAPITestCase(ProductAPITestCase):
         response = self.client.post(self.like_url)
 
         # Then: 인증 오류 (DRF는 403을 반환)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_like_product_not_found(self):
         """존재하지 않는 제품 좋아요 시 404 오류"""
@@ -413,7 +413,7 @@ class ProductLikedFilterAPITestCase(ProductAPITestCase):
         response = self.client.get(url)
 
         # Then: 인증 오류 (DRF는 403을 반환)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_get_liked_products_empty_list_no_likes(self):
         """좋아요한 제품이 없는 사용자의 빈 목록 반환 테스트"""

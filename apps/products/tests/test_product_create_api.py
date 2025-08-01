@@ -108,7 +108,7 @@ class ProductCreateAPITestCase(ProductAPITestCase):
         response = self.client.post(self.url, self.valid_product_data, format="json")
 
         # Then: 인증 오류 반환
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(Product.objects.count(), initial_count)  # 변화 없음
 
     def test_create_product_forbidden_with_normal_user(self):

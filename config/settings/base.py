@@ -38,8 +38,8 @@ CUSTOM_APPS = [
 THIRD_PARTY_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
-    'drf_spectacular',
-    'debug_toolbar',
+    "drf_spectacular",
+    "debug_toolbar",
     #'django_filters',
     "django_extensions",
 ]
@@ -146,29 +146,29 @@ NAVER_REDIRECT_URI = os.getenv("NAVER_REDIRECT_URI")
 
 # REST Framework 설정
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
     ],
 }
 
 # Spectacular 설정
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'AI 주류 추천 API',
-    'DESCRIPTION': '전통주 맛 테스트 및 추천 시스템 API',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'SCHEMA_PATH_PREFIX': '/api/v1/',
+    "TITLE": "AI 주류 추천 API",
+    "DESCRIPTION": "전통주 맛 테스트 및 추천 시스템 API",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": "/api/v1/",
 }
 
 # Debug Toolbar 설정
 INTERNAL_IPS = [
-    '127.0.0.1',
-    'localhost',
+    "127.0.0.1",
+    "localhost",
 ]
 # 구글 로그인 설정
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")

@@ -125,7 +125,7 @@ class ProductUpdateAPITestCase(ProductAPITestCase):
         response = self.client.put(self.url, self.update_data, format="json")
 
         # Then: 인증 오류 반환
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         # 데이터베이스는 변경되지 않음
         self.product_to_update.refresh_from_db()
@@ -284,7 +284,7 @@ class ProductDeleteAPITestCase(ProductAPITestCase):
         response = self.client.delete(self.url)
 
         # Then: 인증 오류 반환
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         # 제품이 삭제되지 않았는지 확인
         self.assertEqual(Product.objects.count(), initial_count)
