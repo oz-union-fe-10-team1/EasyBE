@@ -32,6 +32,7 @@ class Feedback(models.Model):
     photo_url = models.URLField(max_length=2048, null=True, blank=True, verbose_name="시음 사진 URL")
     comment = models.TextField(blank=True, verbose_name="시음 한 줄 평")
     detailed_comment = models.TextField(blank=True, verbose_name="상세 후기")
+    taste_tags = models.CharField(max_length=255, blank=True, verbose_name="맛 태그", help_text="쉼표로 구분된 문자열 (예: 단맛,과일향)")
 
     # 타임스탬프
     created_at = models.DateTimeField(auto_now_add=True)
