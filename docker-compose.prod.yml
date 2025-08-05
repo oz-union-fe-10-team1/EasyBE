@@ -1,0 +1,47 @@
+services:
+  django:
+    image: ${DOCKER_USERNAME}/${DOCKER_REPO}:django-dev
+    container_name: django
+    env_file:
+      - envs/.local.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.prod
+    build:
+      context: .
+    working_dir: /hanjan
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --workers 3 --worker-class=uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 config.asgi:application
+             "
+    ports:
+      - "8000:8000"
+    volumes:
+      - static_volume:/root/hanjan/static
+      - media_volume:/root/hanjan/media
+    networks:
+      - ws
+
+  nginx:
+    image: ${DOCKER_USERNAME}/${DOCKER_REPO}:nginx-dev
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - django
+    volumes:
+      - ./resources/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/root/hanjan/static
+      - media_volume:/root/hanjan/media
+    networks:
+      - ws
+
+networks:
+  ws:
+    driver: bridge
+
+volumes:
+  static_volume:
+  media_volume:
+
