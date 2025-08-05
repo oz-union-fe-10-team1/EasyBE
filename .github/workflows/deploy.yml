@@ -1,0 +1,60 @@
+name: Development Server Deployment
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  dev_deploy:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Docker Images
+        run: |
+          docker build --platform linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:django-dev .
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:django-dev
+
+          docker build --platform linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:nginx-dev -f ./resources/nginx/Dockerfile ./resources/nginx
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:nginx-dev
+
+      - name: Deploy to NCP Server via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.NCP_DEV_HOST }}
+          username: ${{ secrets.NCP_DEV_USER }}
+          key: ${{ secrets.NCP_DEV_SSH_KEY }}
+          script: |
+            cd hanjan
+            
+#            echo ":closed_lock_with_key: .env 파일 갱신"
+#            sudo rm -f /env/${{ secrets.ENV_FILE_NAME }} prod.env
+#            echo "${{ secrets.DJANGO_DEV_ENVS }}" >> /env/${{ secrets.ENV_FILE_NAME }}
+#                              env/local.env
+            echo "기존 컨테이너 정리"
+            docker compose -f docker-compose.prod.yml down
+                    
+            echo "레포에서 이미지 내려받기"
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:django-dev
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:nginx-dev
+
+            echo "기존 이미지 정리"
+            docker image prune -af
+            
+            echo "Docker compose로 django, nginx 컨테이너 실행"
+            docker compose -f docker-compose.prod.yml up -d
+
+            docker rmi $(docker images -f "dangling=true" -q)

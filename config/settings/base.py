@@ -32,11 +32,22 @@ CUSTOM_APPS = [
     "apps.products",
     "apps.taste_test",
     "apps.common",
+    "apps.cart",
 ]
 
-INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS
+THIRD_PARTY_APPS = [
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "drf_spectacular",
+    "debug_toolbar",
+    #'django_filters',
+    "django_extensions",
+]
+
+INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS + THIRD_PARTY_APPS
 
 MIDDLEWARE = [
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -121,3 +132,45 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_USER_MODEL = "users.User"
+
+# 카카오 로그인 설정
+KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
+KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
+
+# 네이버 로그인 설정
+NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
+NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
+NAVER_REDIRECT_URI = os.getenv("NAVER_REDIRECT_URI")
+
+# REST Framework 설정
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+}
+
+# Spectacular 설정
+SPECTACULAR_SETTINGS = {
+    "TITLE": "AI 주류 추천 API",
+    "DESCRIPTION": "전통주 맛 테스트 및 추천 시스템 API",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": "/api/v1/",
+}
+
+# Debug Toolbar 설정
+INTERNAL_IPS = [
+    "127.0.0.1",
+    "localhost",
+]
+# 구글 로그인 설정
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
