@@ -40,15 +40,11 @@ jobs:
           script: |
             cd hanjan
             
-#            echo ":closed_lock_with_key: .env 파일 갱신"
-#            sudo rm -f /env/${{ secrets.ENV_FILE_NAME }} prod.env
-#            echo "${{ secrets.DJANGO_DEV_ENVS }}" >> /env/${{ secrets.ENV_FILE_NAME }}
-#                              env/local.env
             echo "기존 컨테이너 정리"
             docker compose -f docker-compose.prod.yml down
                     
             echo "레포에서 이미지 내려받기"
-            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:django-dev
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:django-dev
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:nginx-dev
 
             echo "기존 이미지 정리"
