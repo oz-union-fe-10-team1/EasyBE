@@ -36,7 +36,7 @@ jobs:
         with:
           host: ${{ secrets.NCP_DEV_HOST }}
           username: ${{ secrets.NCP_DEV_USER }}
-          key: ${{ secrets.NCP_DEV_PASSWORD }}
+          password: ${{ secrets.NCP_DEV_PASSWORD }}
           script: |
             cd hanjan
             
