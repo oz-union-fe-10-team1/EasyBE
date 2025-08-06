@@ -19,7 +19,8 @@ DATABASES: Dict[str, Dict[str, Any]] = {  # type: ignore[no-redef]
 
 # Static files 설정
 STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
+STATIC_ROOT = "/root/hanjan/media"
+MEDIA_ROOT = "/root/hanjan/media"
 
 # CSRF 설정
 CSRF_TRUSTED_ORIGINS = [
