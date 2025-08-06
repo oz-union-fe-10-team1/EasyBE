@@ -1,7 +1,8 @@
 from typing import Any, Dict
 
-from config.settings.base import *
 import sentry_sdk
+
+from config.settings.base import *
 
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
@@ -10,10 +11,10 @@ sentry_sdk.init(
     send_default_pii=True,
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for tracing.
-    traces_sample_rate=os.getenv("SENTRY_TRACES_SAMPLE_RATE"),
+    traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", 1)),
     # To collect profiles for all profile sessions,
     # set `profile_session_sample_rate` to 1.0.
-    profile_session_sample_rate=os.getenv("SENTRY_PROFILES_SAMPLE_RATE"),
+    profile_session_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", 1)),
     # Profiles will be automatically collected while
     # there is an active span.
     profile_lifecycle="trace",
