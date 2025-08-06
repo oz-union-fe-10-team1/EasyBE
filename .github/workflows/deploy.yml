@@ -48,6 +48,9 @@ jobs:
             echo "DockerHub 로그인"
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
             
+            echo "env 심볼릭 링크 연결"
+            ln -sf ./envs/.local.env .env
+            
             echo "기존 컨테이너 정리"
             docker compose -f docker-compose.prod.yml down
                     
@@ -64,3 +67,6 @@ jobs:
             if [ "$(docker images -f 'dangling=true' -q)" ]; then
               docker rmi $(docker images -f "dangling=true" -q)
             fi
+            
+            echo "DockerHub 로그아웃"
+            docker logout
