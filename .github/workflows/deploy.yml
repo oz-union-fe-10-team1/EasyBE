@@ -51,6 +51,10 @@ jobs:
             echo "env 심볼릭 링크 연결"
             ln -sf ./envs/.local.env .env
             
+            echo "확인용: DOCKER_USERNAME=$DOCKER_USERNAME"
+            echo "확인용: DOCKER_REPO=$DOCKER_REPO"
+
+            
             echo "기존 컨테이너 정리"
             docker compose -f docker-compose.prod.yml down
                     
