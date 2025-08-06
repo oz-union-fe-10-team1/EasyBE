@@ -36,7 +36,7 @@ jobs:
         with:
           host: ${{ secrets.NCP_DEV_HOST }}
           username: ${{ secrets.NCP_DEV_USER }}
-          key: ${{ secrets.NCP_DEV_SSH_KEY }}
+          key: ${{ secrets.NCP_DEV_PASSWORD }}
           script: |
             cd hanjan
             
@@ -53,4 +53,6 @@ jobs:
             echo "Docker compose로 django, nginx 컨테이너 실행"
             docker compose -f docker-compose.prod.yml up -d
 
-            docker rmi $(docker images -f "dangling=true" -q)
+            if [ "$(docker images -f 'dangling=true' -q)" ]; then
+              docker rmi $(docker images -f "dangling=true" -q)
+            fi
