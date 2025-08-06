@@ -37,6 +37,10 @@ jobs:
           host: ${{ secrets.NCP_DEV_HOST }}
           username: ${{ secrets.NCP_DEV_USER }}
           password: ${{ secrets.NCP_DEV_PASSWORD }}
+          envs: DOCKER_USERNAME,DOCKER_REPO
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
           script: |
             cd hanjan
             
@@ -44,8 +48,8 @@ jobs:
             docker compose -f docker-compose.prod.yml down
                     
             echo "레포에서 이미지 내려받기"
-            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:django-dev
-            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:nginx-dev
+            docker pull $DOCKER_USERNAME/$DOCKER_REPO:django-dev
+            docker pull $DOCKER_USERNAME/$DOCKER_REPO:nginx-dev
 
             echo "기존 이미지 정리"
             docker image prune -af
