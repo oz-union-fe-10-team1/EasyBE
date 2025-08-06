@@ -371,7 +371,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "requests" },
-    { name = "sentry-sdk" },
+    { name = "sentry-sdk", extra = ["django"] },
     { name = "sniffio" },
     { name = "sqlparse" },
     { name = "types-requests" },
@@ -411,7 +411,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = "==1.1.1" },
     { name = "pyyaml", specifier = "==6.0.2" },
     { name = "requests", specifier = ">=2.32.4" },
-    { name = "sentry-sdk", specifier = "==2.33.0" },
+    { name = "sentry-sdk", extras = ["django"], specifier = "==2.33.0" },
     { name = "sniffio", specifier = "==1.3.1" },
     { name = "sqlparse", specifier = "==0.5.3" },
     { name = "types-requests", specifier = ">=2.32.4.20250611" },
@@ -869,6 +869,11 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/09/0b/6139f589436c278b33359845ed77019cd093c41371f898283bbc14d26c02/sentry_sdk-2.33.0.tar.gz", hash = "sha256:cdceed05e186846fdf80ceea261fe0a11ebc93aab2f228ed73d076a07804152e", size = 335233, upload-time = "2025-07-15T12:07:42.413Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/93/e5/f24e9f81c9822a24a2627cfcb44c10a3971382e67e5015c6e068421f5787/sentry_sdk-2.33.0-py2.py3-none-any.whl", hash = "sha256:a762d3f19a1c240e16c98796f2a5023f6e58872997d5ae2147ac3ed378b23ec2", size = 356397, upload-time = "2025-07-15T12:07:40.729Z" },
+]
+
+[package.optional-dependencies]
+django = [
+    { name = "django" },
 ]
 
 [[package]]
