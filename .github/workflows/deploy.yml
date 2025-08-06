@@ -37,11 +37,7 @@ jobs:
           host: ${{ secrets.NCP_DEV_HOST }}
           username: ${{ secrets.NCP_DEV_USER }}
           password: ${{ secrets.NCP_DEV_PASSWORD }}
-          envs: DOCKER_USERNAME,DOCKER_REPO
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
+          envs: DOCKER_USERNAME,DOCKER_PASSWORD, DOCKER_REPO
           script: |
             cd hanjan
             
@@ -51,26 +47,26 @@ jobs:
             echo "env 심볼릭 링크 연결"
             ln -sf ./envs/.local.env .env
             
-            echo "확인용: DOCKER_USERNAME=$DOCKER_USERNAME"
-            echo "확인용: DOCKER_REPO=$DOCKER_REPO"
-
-            
             echo "기존 컨테이너 정리"
-            docker compose -f docker-compose.prod.yml down
-                    
+            DOCKER_USERNAME=$DOCKER_USERNAME DOCKER_REPO=$DOCKER_REPO docker compose -f docker-compose.prod.yml down
+            
             echo "레포에서 이미지 내려받기"
             docker pull $DOCKER_USERNAME/$DOCKER_REPO:django-dev
             docker pull $DOCKER_USERNAME/$DOCKER_REPO:nginx-dev
-
+            
             echo "기존 이미지 정리"
             docker image prune -af
             
             echo "Docker compose로 django, nginx 컨테이너 실행"
-            docker compose -f docker-compose.prod.yml up -d
-
+            DOCKER_USERNAME=$DOCKER_USERNAME DOCKER_REPO=$DOCKER_REPO docker compose -f docker-compose.prod.yml up -d
+            
             if [ "$(docker images -f 'dangling=true' -q)" ]; then
               docker rmi $(docker images -f "dangling=true" -q)
             fi
             
             echo "DockerHub 로그아웃"
             docker logout
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
