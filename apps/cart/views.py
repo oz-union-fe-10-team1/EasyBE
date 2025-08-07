@@ -1,68 +1,45 @@
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
+from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.db import IntegrityError
 
-from .models import Cart, CartItem
-from .serializers import CartSerializer
+from .models import CartItem
+from .serializers import CartItemSerializer
 
-class CartViewSet(viewsets.GenericViewSet):
-    serializer_class = CartSerializer
+
+class CartItemViewSet(viewsets.ModelViewSet):
+    """
+    장바구니 항목 관리 ViewSet
+
+    - list: 사용자의 장바구니에 담긴 모든 항목과 총액을 조회합니다.
+    - create: 장바구니에 새로운 상품을 추가합니다.
+    - update/partial_update: 장바구니에 담긴 상품의 수량을 변경합니다. (+/- 버튼)
+    - destroy: 장바구니에서 특정 항목을 제거합니다.
+    """
+
+    serializer_class = CartItemSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Cart.objects.filter(user=self.request.user).prefetch_related(
-            'items__product', # 'items__custom_trio_set'
-        )
+        """현재 인증된 사용자의 장바구니 항목만 조회하도록 필터링합니다."""
+        # N+1 문제를 방지하기 위해 product와 관련된 정보들을 미리 불러옵니다.
+        return CartItem.objects.filter(user=self.request.user).select_related("product")
 
-    def get_object(self):
-        cart, _ = Cart.objects.get_or_create(user=self.request.user)
-        return cart
+    def get_serializer_context(self):
+        """시리얼라이저에 request 객체를 전달합니다."""
+        return {"request": self.request}
 
-    @action(detail=False, methods=['get'], url_path='')
-    def get_cart(self, request):
-        cart = self.get_object()
-        serializer = self.get_serializer(cart)
-        return Response(serializer.data)
+    def list(self, request, *args, **kwargs):
+        """장바구니 목록과 총합계 금액을 함께 반환하도록 커스터마이징합니다."""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
 
-    @action(detail=False, methods=['post'], url_path='items')
-    def add_or_update_item(self, request):
-        cart = self.get_object()
-        product_id = request.data.get('product_id')
-        # package_id = request.data.get('package_id') # 보류
-        quantity = int(request.data.get('quantity', 1))
+        # 총합계 금액 계산
+        total_price = sum(item.product.price * item.quantity for item in queryset)
 
-        if not product_id: # and not package_id:
-            return Response({"detail": "product_id가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if quantity <= 0:
-            return Response({"detail": "수량은 1 이상이어야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+        # 최종 응답 데이터 구성
+        data = {
+            "cart_items": serializer.data,
+            "total_price": total_price,
+        }
 
-        item_defaults = {'quantity': quantity}
-        if product_id:
-            item_data = {'cart': cart, 'product_id': product_id, 'item_type': CartItem.ItemType.PRODUCT}
-        # elif package_id:
-        #     item_data = {'cart': cart, 'custom_trio_set_id': package_id, 'item_type': CartItem.ItemType.CUSTOM_TRIO}
-        
-        try:
-            cart_item, created = CartItem.objects.get_or_create(**item_data, defaults=item_defaults)
-            if not created:
-                cart_item.quantity = quantity
-                cart_item.save()
-        except IntegrityError:
-            return Response({"detail": "잘못된 상품 ID입니다."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        serializer = self.get_serializer(cart)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['delete'], url_path='items/(?P<item_id>[^/.]+)')
-    def remove_item(self, request, item_id=None):
-        cart = self.get_object()
-        try:
-            item = CartItem.objects.get(id=item_id, cart=cart)
-            item.delete()
-        except CartItem.DoesNotExist:
-            return Response({"detail": "삭제할 상품을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
-        
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(data)

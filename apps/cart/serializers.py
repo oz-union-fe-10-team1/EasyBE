@@ -1,44 +1,76 @@
 from rest_framework import serializers
-from .models import Cart, CartItem
-from apps.products.models import Product
 
-class ProductSerializer(serializers.ModelSerializer):
+from apps.products.models import Product, ProductImage
+
+from .models import CartItem
+
+
+class _CartProductSerializer(serializers.ModelSerializer):
+    """
+    장바구니 내부에 표시될 상품 정보를 위한 내부 시리얼라이저.
+    Product가 drink인지 package인지에 따라 이름과 이미지를 가져옵니다.
+    """
+
+    name = serializers.CharField(source="product.name", read_only=True)
+    main_image = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
-        fields = ["id", "name", "price"]
+        fields = ["id", "name", "price", "main_image"]
+
+    def get_main_image(self, obj):
+        """상품의 메인 이미지를 반환합니다."""
+        try:
+            image = ProductImage.objects.filter(product=obj, is_main=True).first()
+            return image.image_url if image else None
+        except Exception:
+            return None
+
 
 class CartItemSerializer(serializers.ModelSerializer):
-    # item_type은 읽기 전용으로, 생성 시에는 다른 필드를 통해 유추
-    item_type = serializers.CharField(read_only=True)
-    item_details = serializers.SerializerMethodField()
+    """
+    장바구니 항목 CRUD를 위한 메인 시리얼라이저
+    """
+
+    product = _CartProductSerializer(read_only=True)
+    product_id = serializers.CharField(write_only=True)
     subtotal = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
-        fields = ["id", "item_type", "quantity", "item_details", "subtotal", "added_at"]
-
-    def get_item_details(self, obj):
-        if obj.item_type == CartItem.ItemType.PRODUCT:
-            return ProductSerializer(obj.product).data
-        # if obj.item_type == CartItem.ItemType.CUSTOM_TRIO:
-        #     return CustomTrioSetSerializer(obj.custom_trio_set).data
-        return None
+        fields = ["id", "product", "product_id", "quantity", "subtotal"]
+        read_only_fields = ["id", "product", "subtotal"]
 
     def get_subtotal(self, obj):
-        if obj.item_type == CartItem.ItemType.PRODUCT:
-            return obj.product.price * obj.quantity
-        # if obj.item_type == CartItem.ItemType.CUSTOM_TRIO:
-        #     return obj.custom_trio_set.final_price * obj.quantity
-        return 0
+        """항목별 소계 (가격 * 수량)를 계산합니다."""
+        return obj.product.price * obj.quantity
 
-class CartSerializer(serializers.ModelSerializer):
-    items = CartItemSerializer(many=True, read_only=True)
-    total_price = serializers.SerializerMethodField()
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        # 이미 장바구니에 있는 상품이면 수량만 더해줌
+        product = validated_data.get("product")
+        quantity = validated_data.get("quantity")
+        cart_item, created = CartItem.objects.get_or_create(
+            user=validated_data["user"],
+            product=product,
+            defaults={"quantity": quantity},
+        )
+        if not created:
+            cart_item.quantity += quantity
+            cart_item.save()
+        return cart_item
 
-    class Meta:
-        model = Cart
-        fields = ["id", "user", "items", "total_price", "created_at", "updated_at"]
+    def update(self, instance, validated_data):
+        """
+        수량 업데이트 로직을 커스터마이징합니다.
+        수량이 0 이하로 들어오면 항목을 삭제하고, 그렇지 않으면 수량을 업데이트합니다.
+        """
+        quantity = validated_data.get("quantity", instance.quantity)
 
-    def get_total_price(self, obj):
-        # subtotal 계산 로직을 CartItemSerializer로 위임
-        return sum(CartItemSerializer(item).get_subtotal(item) for item in obj.items.all())
+        if quantity <= 0:
+            instance.delete()
+            return None  # 삭제된 경우 아무것도 반환하지 않음
+
+        instance.quantity = quantity
+        instance.save()
+        return instance
