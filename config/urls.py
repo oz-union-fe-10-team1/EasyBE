@@ -28,9 +28,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/auth/", include("apps.users.urls")),
     # API URL 패턴
-    path("api/v1/product", include("apps.products.urls")),
-    path("api/v1/cart/", include("apps.cart.urls")),
-    path("api/v1/taste-test/", include("apps.taste_test.urls")),
+    # path("api/v1/product", include("apps.products.urls")),
+    # path("api/v1/cart/", include("apps.cart.urls")),
+    # path("api/v1/taste-test/", include("apps.taste_test.urls")),
 ]
 
 if settings.DEBUG:

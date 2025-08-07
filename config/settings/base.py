@@ -33,6 +33,7 @@ CUSTOM_APPS = [
     "apps.taste_test",
     "apps.common",
     "apps.cart",
+    "apps.stores",
 ]
 
 THIRD_PARTY_APPS = [
