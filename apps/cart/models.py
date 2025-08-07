@@ -1,59 +1,77 @@
-import uuid
-
 from django.conf import settings
+from django.core.validators import MinValueValidator
 from django.db import models
 
 
-class Cart(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="cart",
-        verbose_name="사용자",
-    )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")
+class CartItem(models.Model):
+    """장바구니 아이템"""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cart_items")
+    product = models.ForeignKey("products.Product", on_delete=models.CASCADE, related_name="cart_items")
+    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)], help_text="수량")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "장바구니"
-        verbose_name_plural = "장바구니 목록"
+        db_table = "cart_items"
+        unique_together = ("user", "product")  # 사용자당 상품별로 하나씩만
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["product"]),
+            models.Index(fields=["created_at"]),
+        ]
 
     def __str__(self):
-        return f"{self.customer.username}의 장바구니"
+        return f"{self.user.nickname} - {self.product.name} x{self.quantity}"
 
     @property
     def total_price(self):
-        return sum(item.subtotal for item in self.items.all())
-
-
-class CartItem(models.Model):
-    cart = models.ForeignKey(
-        Cart,
-        on_delete=models.CASCADE,
-        related_name="items",
-        verbose_name="장바구니",
-    )
-    product = models.ForeignKey(
-        "products.Product",
-        on_delete=models.CASCADE,
-        related_name="cart_items",
-        verbose_name="상품",
-    )
-    quantity = models.PositiveIntegerField(verbose_name="수량")
-    package_group = models.UUIDField(null=True, blank=True, verbose_name="패키지 그룹 ID")
-
-    class Meta:
-        verbose_name = "장바구니 상품"
-        verbose_name_plural = "장바구니 상품 목록"
-        # unique_together는 패키지 상품 때문에 더 이상 유효하지 않음
-        # 대신, 단일 상품에 대해서만 중복을 방지하는 로직이 필요
-
-    def __str__(self):
-        if self.package_group:
-            return f"[패키지] {self.product.name}"
-        return f"{self.product.name} (수량: {self.quantity})"
-
-    @property
-    def subtotal(self):
-        # 패키지 상품의 가격은 별도 로직으로 계산될 수 있음 (여기서는 단순 곱으로 가정)
+        """해당 아이템의 총 가격"""
         return self.product.price * self.quantity
+
+    def increase_quantity(self, amount=1):
+        """수량 증가"""
+        self.quantity += amount
+        self.save(update_fields=["quantity", "updated_at"])
+
+    def decrease_quantity(self, amount=1):
+        """수량 감소"""
+        if self.quantity > amount:
+            self.quantity -= amount
+            self.save(update_fields=["quantity", "updated_at"])
+        else:
+            self.delete()  # 수량이 0 이하가 되면 삭제
+
+    def update_quantity(self, new_quantity):
+        """수량 업데이트"""
+        if new_quantity <= 0:
+            self.delete()
+        else:
+            self.quantity = new_quantity
+            self.save(update_fields=["quantity", "updated_at"])
+
+    def check_stock_availability(self, store=None):
+        """재고 확인"""
+        if store:
+            # 특정 매장의 재고 확인
+            try:
+                stock = self.product.stocks.get(store=store)
+                return stock.quantity >= self.quantity
+            except:
+                return False
+        else:
+            # 전체 매장 재고 확인
+            total_stock = sum(stock.quantity for stock in self.product.stocks.all())
+            return total_stock >= self.quantity
+
+    def get_available_stores(self):
+        """해당 수량만큼 재고가 있는 매장들 반환"""
+        available_stores = []
+        for stock in self.product.stocks.filter(quantity__gte=self.quantity):
+            if stock.store.is_open:  # 운영 중인 매장만
+                available_stores.append(stock.store)
+        return available_stores
+
+    def can_checkout(self, store):
+        """해당 매장에서 주문 가능한지 확인"""
+        return self.check_stock_availability(store) and store.is_open and self.product.status == "ACTIVE"
