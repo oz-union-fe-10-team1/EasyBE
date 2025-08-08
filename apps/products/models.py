@@ -1,4 +1,7 @@
+# apps/products/models.py
+
 import uuid
+from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -13,7 +16,7 @@ class Brewery(models.Model):
     address = models.TextField(null=True, blank=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    image = models.URLField(max_length=255, null=True, blank=True)
+    image_url = models.URLField(max_length=255, null=True, blank=True)  # image → image_url
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -43,32 +46,50 @@ class Drink(models.Model):
     brewery = models.ForeignKey(Brewery, on_delete=models.CASCADE, related_name="drinks")
     ingredients = models.TextField(help_text="원재료")
     alcohol_type = models.CharField(max_length=20, choices=AlcoholType.choices, help_text="주종")
-    alcohol_content = models.DecimalField(
+    abv = models.DecimalField(  # alcohol_content → abv
         max_digits=5,
         decimal_places=2,
-        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("100"))],
         help_text="알코올 도수",
     )
     volume_ml = models.PositiveIntegerField(help_text="용량(ml)")
 
     # 맛 프로필 (0.0 ~ 5.0)
     sweetness_level = models.DecimalField(
-        max_digits=3, decimal_places=1, default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)]
+        max_digits=3,
+        decimal_places=1,
+        default=Decimal("0.0"),
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
     )
     acidity_level = models.DecimalField(
-        max_digits=3, decimal_places=1, default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)]
+        max_digits=3,
+        decimal_places=1,
+        default=Decimal("0.0"),
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
     )
     body_level = models.DecimalField(
-        max_digits=3, decimal_places=1, default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)]
+        max_digits=3,
+        decimal_places=1,
+        default=Decimal("0.0"),
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
     )
     carbonation_level = models.DecimalField(
-        max_digits=3, decimal_places=1, default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)]
+        max_digits=3,
+        decimal_places=1,
+        default=Decimal("0.0"),
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
     )
     bitterness_level = models.DecimalField(
-        max_digits=3, decimal_places=1, default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)]
+        max_digits=3,
+        decimal_places=1,
+        default=Decimal("0.0"),
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
     )
     aroma_level = models.DecimalField(
-        max_digits=3, decimal_places=1, default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)]
+        max_digits=3,
+        decimal_places=1,
+        default=Decimal("0.0"),
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -79,11 +100,11 @@ class Drink(models.Model):
         indexes = [
             models.Index(fields=["name"]),
             models.Index(fields=["alcohol_type"]),
-            models.Index(fields=["alcohol_content"]),
+            models.Index(fields=["abv"]),  # alcohol_content → abv
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.alcohol_content}%)"
+        return f"{self.name} ({self.abv}%)"
 
 
 class Package(models.Model):
@@ -137,7 +158,7 @@ class Product(models.Model):
     drink = models.OneToOneField(Drink, on_delete=models.CASCADE, null=True, blank=True, related_name="product")
     package = models.OneToOneField(Package, on_delete=models.CASCADE, null=True, blank=True, related_name="product")
 
-    # 가격 정보
+    # 가격 정보 (할인 정책 포함)
     price = models.PositiveIntegerField(help_text="판매가격")
     original_price = models.PositiveIntegerField(null=True, blank=True, help_text="정가")
     discount = models.PositiveIntegerField(null=True, blank=True, help_text="할인금액")
@@ -202,25 +223,33 @@ class Product(models.Model):
             return self.package.name
         return "Unknown Product"
 
-    # def get_discount_rate(self):
-    #     """할인율 계산 (퍼센트)"""
-    #     if self.original_price and self.discount:
-    #         return round((self.discount / self.original_price) * 100, 1)
-    #     return 0
+    @property
+    def product_type(self):
+        """상품 타입 반환"""
+        if self.drink:
+            return "individual"
+        elif self.package:
+            return "package"
+        return "unknown"
 
-    # def get_final_price(self):
-    #     """최종 판매가 계산"""
-    #     if self.discount:
-    #         return self.original_price - self.discount
-    #     return self.price
+    def get_discount_rate(self):
+        """할인율 계산 (퍼센트)"""
+        if self.original_price and self.discount:
+            return round((self.discount / self.original_price) * 100, 1)
+        return 0
 
-    # def is_on_sale(self):
-    #     """할인 중인지 확인"""
-    #     return bool(self.discount and self.discount > 0)
+    def get_final_price(self):
+        """최종 판매가 계산"""
+        # price가 이미 할인된 가격이라고 가정
+        return self.price
 
-    # def get_savings_amount(self):
-    #     """절약 금액"""
-    #     return self.discount if self.discount else 0
+    def is_on_sale(self):
+        """할인 중인지 확인"""
+        return bool(self.discount and self.discount > 0)
+
+    def get_savings_amount(self):
+        """절약 금액"""
+        return self.discount if self.discount else 0
 
 
 class ProductImage(models.Model):
