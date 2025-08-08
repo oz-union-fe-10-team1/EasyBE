@@ -1,9 +1,10 @@
 from django.urls import path
 
 from .views import GoogleLoginView, KakaoLoginView, NaverLoginView, OAuthStateView
+from apps.users.views.user_delete_views import UserDeleteAPIView
 
 from .views import GoogleLoginView, KakaoLoginView, NaverLoginView
-from apps.users.views.user_delete_views import UserDeleteAPIView
+
 urlpatterns = [
     path("login/kakao/", KakaoLoginView.as_view(), name="kakao_login"),
     path("login/naver/", NaverLoginView.as_view(), name="naver_login"),
