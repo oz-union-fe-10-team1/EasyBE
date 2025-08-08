@@ -3,6 +3,9 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from apps.users.utils.user_manager import UserManager
+from django.utils import timezone
+from apps.users.user_manager import UserManager
+import datetime
 from config.settings import base
 
 
@@ -23,12 +26,29 @@ class User(AbstractBaseUser, PermissionsMixin):
     # 알림 동의
     notification_agreed = models.BooleanField(default=True, help_text="알림 수신 동의")
 
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    recovery_deadline = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     objects = UserManager()
     USERNAME_FIELD = "nickname"
     REQUIRED_FIELDS = []
+
+    def soft_delete(self):
+        """회원 탈퇴 처리 (2주 뒤 완전 삭제 예정)"""
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.recovery_deadline = timezone.now() + datetime.timedelta(days=14)
+        self.save(update_fields=["is_deleted", "deleted_at", "recovery_deadline"])
+
+    def restore_account(self):
+        """회원 복구 처리"""
+        self.is_deleted = False
+        self.deleted_at = None
+        self.recovery_deadline = None
+        self.save(update_fields=["is_deleted", "deleted_at", "recovery_deadline"])
 
     class Meta:
         db_table = "users"
@@ -298,6 +318,7 @@ class PreferTasteProfile(models.Model):
     def get_taste_similarity(self, drink):
         """특정 술과의 취향 유사도 계산 (0.0 ~ 1.0)"""
         import math
+        from decimal import Decimal
 
         # 각 맛 지표별 차이 계산
         differences = [
