@@ -222,11 +222,27 @@ class ProductSerializerTest(TestCase):
 
         first_product = data[0]
         expected_fields = {
-            "id", "name", "product_type", "price", "original_price", "discount",
-            "discount_rate", "final_price", "is_on_sale", "main_image_url",
-            "brewery_name", "alcohol_type", "is_gift_suitable", "is_regional_specialty",
-            "is_limited_edition", "is_premium", "is_award_winning", "view_count",
-            "like_count", "status", "created_at",
+            "id",
+            "name",
+            "product_type",
+            "price",
+            "original_price",
+            "discount",
+            "discount_rate",
+            "final_price",
+            "is_on_sale",
+            "main_image_url",
+            "brewery_name",
+            "alcohol_type",
+            "is_gift_suitable",
+            "is_regional_specialty",
+            "is_limited_edition",
+            "is_premium",
+            "is_award_winning",
+            "view_count",
+            "like_count",
+            "status",
+            "created_at",
         }
         self.assertTrue(expected_fields.issubset(set(first_product.keys())))
 
@@ -261,7 +277,9 @@ class ProductCreationSerializerTest(TestCase):
 
     def test_individual_product_creation_validation(self):
         """개별 상품 생성 유효성 검사"""
-        from apps.products.serializers.product import IndividualProductCreationSerializer
+        from apps.products.serializers.product import (
+            IndividualProductCreationSerializer,
+        )
 
         # Given
         valid_data = {
