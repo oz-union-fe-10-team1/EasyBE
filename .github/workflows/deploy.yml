@@ -48,7 +48,7 @@ jobs:
             ln -sf ./envs/.local.env .env
             
             echo "기존 컨테이너 정리"
-            DOCKER_USERNAME=$DOCKER_USERNAME DOCKER_REPO=$DOCKER_REPO docker compose -f docker-compose.prod.yml down
+            DOCKER_USERNAME=$DOCKER_USERNAME DOCKER_REPO=$DOCKER_REPO docker compose -f docker-compose.prod.yml down -v
             
             echo "레포에서 이미지 내려받기"
             docker pull $DOCKER_USERNAME/$DOCKER_REPO:django-dev
