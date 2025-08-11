@@ -7,6 +7,7 @@ from apps.users.utils.jwt import JWTService
 from ..serializers import NaverLoginSerializer, UserSerializer
 from apps.users.utils.social_auth import SocialAuthService
 from ..social_login.naver_service import NaverService
+from ..utils.cache_oauth_state import OAuthStateService
 
 
 class NaverLoginView(APIView):
@@ -16,7 +17,7 @@ class NaverLoginView(APIView):
     """
 
     def post(self, request):
-        # 1. 요청 데이터 검증
+        # 0. 요청 데이터 검증
         serializer = NaverLoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -25,6 +26,12 @@ class NaverLoginView(APIView):
         state = serializer.validated_data["state"]
 
         try:
+            # 1. State 검증 및 소비
+            if not OAuthStateService.verify_and_consume_state(state):
+                return Response({
+                    'error': 'Invalid or expired state'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
             # 2. 네이버에서 access token 획득
             token_data = NaverService.get_access_token(authorization_code, state)
             access_token = token_data["access_token"]

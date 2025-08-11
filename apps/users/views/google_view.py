@@ -8,6 +8,7 @@ from apps.users.utils.jwt import JWTService
 from ..serializers import GoogleLoginSerializer, UserSerializer
 from apps.users.utils.social_auth import SocialAuthService
 from ..social_login.google_service import GoogleService
+from ..utils.cache_oauth_state import OAuthStateService
 
 
 class GoogleLoginView(APIView):
@@ -17,14 +18,21 @@ class GoogleLoginView(APIView):
     """
 
     def post(self, request: Request) -> Response:
-        # 1. 요청 데이터 검증
+        # 0. 요청 데이터 검증
         serializer = GoogleLoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         authorization_code = serializer.validated_data["code"]
+        state = serializer.validated_data["state"]
 
         try:
+            # 1. State 검증 및 소비
+            if not OAuthStateService.verify_and_consume_state(state):
+                return Response({
+                    'error': 'Invalid or expired state'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
             # 2. 구글에서 access token 획득
             token_data = GoogleService.get_access_token(authorization_code)
             access_token = token_data["access_token"]
