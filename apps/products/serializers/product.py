@@ -4,14 +4,10 @@ from decimal import Decimal
 from django.db import transaction
 from rest_framework import serializers
 
-from apps.products.models import Product, ProductImage
+from apps.products.models import Drink, Package, Product, ProductImage
 
-from .drink import DrinkCreationSerializer, DrinkSerializer
-from .package import (
-    PackageCreationSerializer,
-    PackageItemCreationSerializer,
-    PackageListSerializer,
-)
+from .drink import DrinkSerializer
+from .package import PackageSerializer
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -52,8 +48,8 @@ class ProductListSerializer(serializers.ModelSerializer):
             "brewery_name",
             "alcohol_type",
             "is_gift_suitable",
-            "is_regional_specialty",  # 추가
-            "is_limited_edition",  # 추가
+            "is_regional_specialty",
+            "is_limited_edition",
             "is_premium",
             "is_award_winning",
             "view_count",
@@ -104,7 +100,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     product_type = serializers.SerializerMethodField()
     drink = DrinkSerializer(read_only=True)
-    package = PackageListSerializer(read_only=True)
+    package = PackageSerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
 
     discount_rate = serializers.SerializerMethodField()
@@ -159,26 +155,29 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return obj.is_on_sale()
 
 
-class ProductImageCreationSerializer(serializers.ModelSerializer):
+class ProductImageCreateSerializer(serializers.ModelSerializer):
     """상품 이미지 생성용 시리얼라이저"""
 
     class Meta:
         model = ProductImage
         fields = ["image_url", "is_main"]
 
-    def validate(self, attrs):
-        """이미지 유효성 검사"""
-        if not attrs.get("image_url"):
-            raise serializers.ValidationError({"image_url": "이미지 URL은 필수입니다."})
-        return attrs
+    def validate_image_url(self, value):
+        """이미지 URL 유효성 검사"""
+        if not value or not value.strip():
+            raise serializers.ValidationError("이미지 URL은 필수입니다.")
+        return value.strip()
 
 
-class ProductInfoSerializer(serializers.Serializer):
-    """상품 정보 입력용 시리얼라이저"""
+class ProductBaseCreateSerializer(serializers.Serializer):
+    """상품 생성 기본 시리얼라이저"""
 
+    # 가격 정보
     price = serializers.IntegerField(min_value=0)
     original_price = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     discount = serializers.IntegerField(min_value=0, required=False, allow_null=True)
+
+    # 상품 설명
     description = serializers.CharField()
     description_image_url = serializers.URLField()
 
@@ -190,8 +189,11 @@ class ProductInfoSerializer(serializers.Serializer):
     is_premium = serializers.BooleanField(default=False)
     is_organic = serializers.BooleanField(default=False)
 
+    # 이미지
+    images = ProductImageCreateSerializer(many=True)
+
     def validate(self, attrs):
-        """할인 정보 유효성 검사"""
+        """공통 유효성 검사"""
         original_price = attrs.get("original_price")
         discount = attrs.get("discount")
 
@@ -204,14 +206,6 @@ class ProductInfoSerializer(serializers.Serializer):
             raise serializers.ValidationError({"discount": "할인금액이 정가보다 클 수 없습니다."})
 
         return attrs
-
-
-class IndividualProductCreationSerializer(serializers.Serializer):
-    """개별 상품 생성용 시리얼라이저"""
-
-    drink_info = DrinkCreationSerializer()
-    product_info = ProductInfoSerializer()
-    images = ProductImageCreationSerializer(many=True)
 
     def validate_images(self, value):
         """이미지 유효성 검사"""
@@ -228,24 +222,33 @@ class IndividualProductCreationSerializer(serializers.Serializer):
 
         return value
 
+    def create_product_images(self, product, images_data):
+        """상품 이미지들 생성"""
+        for image_data in images_data:
+            ProductImage.objects.create(product=product, **image_data)
+
+
+class IndividualProductCreateSerializer(ProductBaseCreateSerializer):
+    """개별 상품 생성용 시리얼라이저"""
+
+    drink_info = DrinkSerializer()
+
     @transaction.atomic
     def create(self, validated_data):
         """개별 상품 생성 (트랜잭션)"""
-        drink_data = validated_data["drink_info"]
-        product_data = validated_data["product_info"]
-        images_data = validated_data["images"]
+        drink_data = validated_data.pop("drink_info")
+        images_data = validated_data.pop("images")
 
         # 1. 술 생성
-        drink_serializer = DrinkCreationSerializer(data=drink_data)
+        drink_serializer = DrinkSerializer(data=drink_data)
         drink_serializer.is_valid(raise_exception=True)
         drink = drink_serializer.save()
 
         # 2. 상품 생성
-        product = Product.objects.create(drink=drink, **product_data)
+        product = Product.objects.create(drink=drink, **validated_data)
 
         # 3. 이미지들 생성
-        for image_data in images_data:
-            ProductImage.objects.create(product=product, **image_data)
+        self.create_product_images(product, images_data)
 
         return product
 
@@ -254,67 +257,27 @@ class IndividualProductCreationSerializer(serializers.Serializer):
         return ProductDetailSerializer(instance).data
 
 
-class PackageProductCreationSerializer(serializers.Serializer):
+class PackageProductCreateSerializer(ProductBaseCreateSerializer):
     """패키지 상품 생성용 시리얼라이저"""
 
-    package_info = PackageCreationSerializer()
-    drink_ids = serializers.ListField(child=serializers.IntegerField(), min_length=2, max_length=5)
-    product_info = ProductInfoSerializer()
-    images = ProductImageCreationSerializer(many=True)
-
-    def validate_drink_ids(self, value):
-        """술 ID 목록 유효성 검사"""
-        from apps.products.models import Drink
-
-        # 중복 체크
-        if len(value) != len(set(value)):
-            raise serializers.ValidationError("중복된 술은 선택할 수 없습니다.")
-
-        # 존재하는 술인지 확인
-        existing_drinks = Drink.objects.filter(id__in=value)
-        if existing_drinks.count() != len(value):
-            raise serializers.ValidationError("존재하지 않는 술이 포함되어 있습니다.")
-
-        return value
-
-    def validate_images(self, value):
-        """이미지 유효성 검사"""
-        if not value:
-            raise serializers.ValidationError("최소 1개의 이미지는 필요합니다.")
-
-        # 메인 이미지 체크
-        main_images = [img for img in value if img.get("is_main")]
-        if len(main_images) != 1:
-            raise serializers.ValidationError("메인 이미지는 정확히 1개여야 합니다.")
-
-        return value
+    package_info = PackageSerializer()
 
     @transaction.atomic
     def create(self, validated_data):
         """패키지 상품 생성 (트랜잭션)"""
-        from apps.products.models import Drink, PackageItem
-
-        package_data = validated_data["package_info"]
-        drink_ids = validated_data["drink_ids"]
-        product_data = validated_data["product_info"]
-        images_data = validated_data["images"]
+        package_data = validated_data.pop("package_info")
+        images_data = validated_data.pop("images")
 
         # 1. 패키지 생성
-        package_serializer = PackageCreationSerializer(data=package_data)
+        package_serializer = PackageSerializer(data=package_data)
         package_serializer.is_valid(raise_exception=True)
         package = package_serializer.save()
 
-        # 2. 패키지 아이템들 생성
-        drinks = Drink.objects.filter(id__in=drink_ids)
-        for drink in drinks:
-            PackageItem.objects.create(package=package, drink=drink)
+        # 2. 상품 생성
+        product = Product.objects.create(package=package, **validated_data)
 
-        # 3. 상품 생성
-        product = Product.objects.create(package=package, **product_data)
-
-        # 4. 이미지들 생성
-        for image_data in images_data:
-            ProductImage.objects.create(product=product, **image_data)
+        # 3. 이미지들 생성
+        self.create_product_images(product, images_data)
 
         return product
 

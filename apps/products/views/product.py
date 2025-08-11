@@ -4,38 +4,35 @@ from decimal import Decimal
 from django.db.models import Case, DecimalField, F, Q, When
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status
-from rest_framework.decorators import action
-from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.generics import (
+    CreateAPIView,
+    DestroyAPIView,
+    ListAPIView,
+    RetrieveAPIView,
+)
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.products.models import Drink, Product, ProductLike
 from apps.products.serializers import (
     DrinkForPackageSerializer,
-    IndividualProductCreationSerializer,
-    PackageProductCreationSerializer,
+    IndividualProductCreateSerializer,
+    PackageProductCreateSerializer,
     ProductDetailSerializer,
     ProductFilterSerializer,
     ProductLikeSerializer,
     ProductListSerializer,
 )
 
-
-class ProductPagination(PageNumberPagination):
-    """상품 목록 페이지네이션"""
-
-    page_size = 20
-    page_size_query_param = "page_size"
-    max_page_size = 100
+from .pagination import MainPagePagination, SearchPagination, StandardPagination
 
 
 class ProductListView(ListAPIView):
     """상품 목록 조회 API - GET /api/v1/products/ (UI 검색페이지용)"""
 
     serializer_class = ProductListSerializer
-    pagination_class = ProductPagination
+    pagination_class = SearchPagination  # 16개씩
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["drink__name", "package__name", "description"]
     ordering_fields = ["price", "created_at", "view_count", "like_count"]
@@ -73,58 +70,35 @@ class ProductListView(ListAPIView):
 
         filters_data = filter_serializer.validated_data
 
-        # 체크박스 필터들 (UI 상세 검색)
-        if filters_data.get("is_gift_suitable"):
-            queryset = queryset.filter(is_gift_suitable=True)
-        if filters_data.get("is_regional_specialty"):
-            queryset = queryset.filter(is_regional_specialty=True)
-        if filters_data.get("is_award_winning"):
-            queryset = queryset.filter(is_award_winning=True)
-        if filters_data.get("is_limited_edition"):
-            queryset = queryset.filter(is_limited_edition=True)
+        # 체크박스 필터들
+        checkbox_filters = {
+            "is_gift_suitable": "is_gift_suitable",
+            "is_regional_specialty": "is_regional_specialty",
+            "is_award_winning": "is_award_winning",
+            "is_limited_edition": "is_limited_edition",
+        }
+
+        for param, field in checkbox_filters.items():
+            if filters_data.get(param):
+                queryset = queryset.filter(**{field: True})
 
         # 맛 프로필 슬라이더 필터들 (±1 범위)
-        if filters_data.get("sweetness_level") is not None:
-            target = filters_data["sweetness_level"]
-            queryset = queryset.filter(
-                drink__sweetness_level__gte=max(Decimal("0.0"), target - Decimal("1.0")),
-                drink__sweetness_level__lte=min(Decimal("5.0"), target + Decimal("1.0")),
-            )
+        taste_filters = [
+            "sweetness_level",
+            "acidity_level",
+            "bitterness_level",
+            "body_level",
+            "carbonation_level",
+            "aroma_level",
+        ]
 
-        if filters_data.get("acidity_level") is not None:
-            target = filters_data["acidity_level"]
-            queryset = queryset.filter(
-                drink__acidity_level__gte=max(Decimal("0.0"), target - Decimal("1.0")),
-                drink__acidity_level__lte=min(Decimal("5.0"), target + Decimal("1.0")),
-            )
-
-        if filters_data.get("bitterness_level") is not None:
-            target = filters_data["bitterness_level"]
-            queryset = queryset.filter(
-                drink__bitterness_level__gte=max(Decimal("0.0"), target - Decimal("1.0")),
-                drink__bitterness_level__lte=min(Decimal("5.0"), target + Decimal("1.0")),
-            )
-
-        if filters_data.get("body_level") is not None:
-            target = filters_data["body_level"]
-            queryset = queryset.filter(
-                drink__body_level__gte=max(Decimal("0.0"), target - Decimal("1.0")),
-                drink__body_level__lte=min(Decimal("5.0"), target + Decimal("1.0")),
-            )
-
-        if filters_data.get("carbonation_level") is not None:
-            target = filters_data["carbonation_level"]
-            queryset = queryset.filter(
-                drink__carbonation_level__gte=max(Decimal("0.0"), target - Decimal("1.0")),
-                drink__carbonation_level__lte=min(Decimal("5.0"), target + Decimal("1.0")),
-            )
-
-        if filters_data.get("aroma_level") is not None:
-            target = filters_data["aroma_level"]
-            queryset = queryset.filter(
-                drink__aroma_level__gte=max(Decimal("0.0"), target - Decimal("1.0")),
-                drink__aroma_level__lte=min(Decimal("5.0"), target + Decimal("1.0")),
-            )
+        for taste_filter in taste_filters:
+            if filters_data.get(taste_filter) is not None:
+                target = filters_data[taste_filter]
+                queryset = queryset.filter(
+                    **{f"drink__{taste_filter}__gte": max(Decimal("0.0"), target - Decimal("1.0"))},
+                    **{f"drink__{taste_filter}__lte": min(Decimal("5.0"), target + Decimal("1.0"))},
+                )
 
         # 정렬
         ordering = filters_data.get("ordering", "-created_at")
@@ -159,9 +133,9 @@ class ProductDetailView(RetrieveAPIView):
 
 
 class IndividualProductCreateView(CreateAPIView):
-    """개별 상품 생성 API - POST /api/v1/product/ (어드민용)"""
+    """개별 상품 생성 API - POST /api/v1/products/individual/ (어드민용)"""
 
-    serializer_class = IndividualProductCreationSerializer
+    serializer_class = IndividualProductCreateSerializer
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
@@ -179,9 +153,9 @@ class IndividualProductCreateView(CreateAPIView):
 
 
 class PackageProductCreateView(CreateAPIView):
-    """패키지 상품 생성 API - POST /api/v1/package/ (어드민용)"""
+    """패키지 상품 생성 API - POST /api/v1/products/package/ (어드민용)"""
 
-    serializer_class = PackageProductCreationSerializer
+    serializer_class = PackageProductCreateSerializer
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
@@ -202,7 +176,7 @@ class DrinksForPackageView(ListAPIView):
     """패키지 생성용 술 목록 API - GET /api/v1/drinks/for-package/ (어드민용)"""
 
     serializer_class = DrinkForPackageSerializer
-    pagination_class = ProductPagination
+    pagination_class = StandardPagination  # 20개씩
 
     def get_queryset(self):
         """상품이 있는 술들만 반환"""
@@ -240,15 +214,39 @@ class ProductLikeToggleView(APIView):
         Product.objects.filter(pk=product.pk).update(like_count=like_count)
 
         serializer = ProductLikeSerializer({"is_liked": is_liked, "like_count": like_count})
-
         return Response(serializer.data)
+
+
+class ProductDeleteView(DestroyAPIView):
+    """상품 삭제 API - DELETE /api/v1/products/{id}/ (어드민용)"""
+
+    permission_classes = [IsAuthenticated]
+    lookup_field = "pk"
+
+    def get_queryset(self):
+        return Product.objects.all()
+
+    def perform_destroy(self, instance):
+        from rest_framework.exceptions import ValidationError
+
+        if instance.drink:  # 개별 상품인 경우
+            # 해당 술이 패키지에 포함되어 있는지 체크
+            if instance.drink.packages.exists():
+                package_names = list(instance.drink.packages.values_list("name", flat=True))
+                raise ValidationError(
+                    f"이 술이 다음 패키지에 포함되어 있습니다: {', '.join(package_names)}. "
+                    f"패키지 상품을 먼저 삭제해주세요."
+                )
+
+        # 패키지 상품이거나 패키지에 포함되지 않은 개별 상품만 삭제
+        instance.delete()
 
 
 class PopularProductsView(ListAPIView):
     """인기 상품 API - GET /api/v1/products/popular/ (UI 메인페이지용)"""
 
     serializer_class = ProductListSerializer
-    pagination_class = ProductPagination
+    pagination_class = MainPagePagination  # 8개씩
 
     def get_queryset(self):
         """조회수 기준 인기 상품"""
@@ -264,7 +262,7 @@ class FeaturedProductsView(ListAPIView):
     """추천 상품 API - GET /api/v1/products/featured/ (UI 메인페이지용)"""
 
     serializer_class = ProductListSerializer
-    pagination_class = ProductPagination
+    pagination_class = MainPagePagination  # 8개씩
 
     def get_queryset(self):
         """프리미엄 상품들을 추천 상품으로"""

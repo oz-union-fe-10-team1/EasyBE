@@ -6,27 +6,22 @@ from .brewery import (
     BrewerySimpleSerializer,
 )
 from .drink import (
-    DrinkCreationSerializer,
     DrinkForPackageSerializer,
     DrinkListSerializer,
     DrinkSerializer,
     DrinkSimpleSerializer,
 )
-from .package import PackageSerializer  # 추가!
 from .package import (
-    PackageCreationSerializer,
-    PackageItemCreationSerializer,
     PackageListSerializer,
+    PackageSerializer,
     PackageSimpleSerializer,
 )
 from .product import (
-    IndividualProductCreationSerializer,
-    PackageProductCreationSerializer,
+    IndividualProductCreateSerializer,
+    PackageProductCreateSerializer,
     ProductDetailSerializer,
     ProductFilterSerializer,
-    ProductImageCreationSerializer,
     ProductImageSerializer,
-    ProductInfoSerializer,
     ProductLikeSerializer,
     ProductListSerializer,
 )
@@ -41,21 +36,16 @@ __all__ = [
     "DrinkSerializer",
     "DrinkForPackageSerializer",
     "DrinkSimpleSerializer",
-    "DrinkCreationSerializer",
     # Package
     "PackageListSerializer",
     "PackageSerializer",
     "PackageSimpleSerializer",
-    "PackageCreationSerializer",
-    "PackageItemCreationSerializer",
     # Product
     "ProductImageSerializer",
     "ProductListSerializer",
     "ProductDetailSerializer",
-    "ProductImageCreationSerializer",
-    "ProductInfoSerializer",
-    "IndividualProductCreationSerializer",
-    "PackageProductCreationSerializer",
+    "IndividualProductCreateSerializer",
+    "PackageProductCreateSerializer",
     "ProductFilterSerializer",
     "ProductLikeSerializer",
 ]
