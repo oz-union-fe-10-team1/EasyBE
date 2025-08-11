@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.users.models import User
+from apps.users.serializers import UserRestoreSerializer
 from apps.users.utils.Base62 import generate_base62_code
 from config.settings.base import EMAIL_HOST_USER
 
@@ -16,14 +17,14 @@ class SendRecoveryCodeAPIView(APIView):
     def post(self, request):
         # email = "parkseokmin0724@gmail.com"  # 임시 테스트
         email = request.data.get("email")
-        if not email:
-            return Response({"detail": "이메일을 입력해주세요."}, status=status.HTTP_400_BAD_REQUEST)
+        if not email:  # 만약에 이메일이 없으면
+            return Response({"detail": "이메일을 입력해주세요."}, status=status.HTTP_400_BAD_REQUEST)  # 예외 발생
 
         code = generate_base62_code()
         # {key:value} >> {"seokmin0724@gmail.com":"v41kl5"}
         # Redis에 저장 (5분 TTL)
-        cache_key = email
-        cache.set(cache_key, code, timeout=300)  # 300초 = 5분
+        cache_key = email  # 요청 받은 이메일을 키값으로 사용
+        cache.set(cache_key, code, timeout=300)
 
         # 이메일 발송
         send_mail(
@@ -37,6 +38,8 @@ class SendRecoveryCodeAPIView(APIView):
 
 
 class VerifyRecoveryCodeAPIView(APIView):
+    serializer_class = UserRestoreSerializer
+
     @extend_schema(summary="인증코드 검증 및 계정 복구", description="인증코드 검증 및 계정 복구")
     # 인증코드 검증 및 계정 복구
     def post(self, request):
@@ -45,8 +48,10 @@ class VerifyRecoveryCodeAPIView(APIView):
         email = "parkseokmin0724@gmail.com"
         code = "yuHqtW"
         """
-        email = request.data.get("email")
-        code = request.data.get("code")
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data.get("email")
+        code = serializer.validated_data.get("code")
 
         cache_key = email
         stored_code = cache.get(cache_key)
