@@ -15,6 +15,7 @@ dependencies = [
     "django-debug-toolbar>=6.0.0",
     "django-extensions>=4.1",
     "django-filter>=25.1",
+    "django-redis>=6.0.0",
     "django-stubs[compatible-mypy]>=5.2.2",
     "djangorestframework>=3.16.0",
     "djangorestframework-simplejwt>=5.5.1",

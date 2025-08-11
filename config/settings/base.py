@@ -92,6 +92,25 @@ DATABASES = {
     }
 }
 
+# Redis Settings
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+
+if not REDIS_HOST or not REDIS_PORT:
+    raise ValueError("REDIS_HOST and REDIS_PORT must be set")
+
+# Redis 설정
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",  # Redis 서버 주소
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
+# OAuth State 설정
+OAUTH_STATE_EXPIRE_SECONDS = 300  # 5분
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

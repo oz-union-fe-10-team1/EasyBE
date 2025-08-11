@@ -2,10 +2,12 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..jwt import JWTService
-from ..serializers import KakaoLoginSerializer, LoginResponseSerializer, UserSerializer
-from ..social_auth import SocialAuthService
+from apps.users.utils.jwt import JWTService
+from apps.users.utils.social_auth import SocialAuthService
+
+from ..serializers import KakaoLoginSerializer, UserSerializer
 from ..social_login.kakao_service import KakaoService
+from ..utils.cache_oauth_state import OAuthStateService
 
 
 class KakaoLoginView(APIView):
@@ -15,14 +17,19 @@ class KakaoLoginView(APIView):
     """
 
     def post(self, request):
-        # 1. 요청 데이터 검증
+        # 0. 요청 데이터 검증
         serializer = KakaoLoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         authorization_code = serializer.validated_data["code"]
+        state = serializer.validated_data["state"]
 
         try:
+            # 1. State 검증 및 소비
+            if not OAuthStateService.verify_and_consume_state(state):
+                return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
+
             # 2. 카카오에서 access token 획득
             token_data = KakaoService.get_access_token(authorization_code)
             access_token = token_data["access_token"]

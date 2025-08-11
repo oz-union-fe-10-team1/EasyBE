@@ -4,7 +4,7 @@ from typing import Any, Dict, Tuple
 
 from django.db import transaction
 
-from .models import SocialAccount, User
+from apps.users.models import SocialAccount, User
 
 
 class SocialAuthService:
