@@ -4,9 +4,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..jwt import JWTService
+from apps.users.utils.jwt import JWTService
 from ..serializers import GoogleLoginSerializer, UserSerializer
-from ..social_auth import SocialAuthService
+from apps.users.utils.social_auth import SocialAuthService
 from ..social_login.google_service import GoogleService
 
 

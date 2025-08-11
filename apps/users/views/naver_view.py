@@ -3,9 +3,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..jwt import JWTService
-from ..serializers import LoginResponseSerializer, NaverLoginSerializer, UserSerializer
-from ..social_auth import SocialAuthService
+from apps.users.utils.jwt import JWTService
+from ..serializers import NaverLoginSerializer, UserSerializer
+from apps.users.utils.social_auth import SocialAuthService
 from ..social_login.naver_service import NaverService
 
 

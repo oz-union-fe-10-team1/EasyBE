@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from apps.users.user_manager import UserManager
+from apps.users.utils.user_manager import UserManager
 from config.settings import base
 
 
@@ -298,7 +298,6 @@ class PreferTasteProfile(models.Model):
     def get_taste_similarity(self, drink):
         """특정 술과의 취향 유사도 계산 (0.0 ~ 1.0)"""
         import math
-        from decimal import Decimal
 
         # 각 맛 지표별 차이 계산
         differences = [

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from django.contrib.auth.models import BaseUserManager
 
 if TYPE_CHECKING:
-    from .models import SocialAccount, User
+    from apps.users.models import SocialAccount, User
 
 
 class UserManager(BaseUserManager["User"]):
