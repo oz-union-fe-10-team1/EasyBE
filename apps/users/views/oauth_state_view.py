@@ -1,11 +1,14 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from ..serializers import StateSerializer
-from ..utils.cache_oauth_state import OAuthStateService
 import logging
 
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from ..serializers import StateSerializer
+from ..utils.cache_oauth_state import OAuthStateService
+
 logger = logging.getLogger(__name__)
+
 
 class OAuthStateView(APIView):
     """
@@ -17,23 +20,16 @@ class OAuthStateView(APIView):
         serializer = StateSerializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        state_value = serializer.validated_data['state']
+        state_value = serializer.validated_data["state"]
 
         try:
             # Redis에 state 저장
             OAuthStateService.save_state(state_value)
 
-            return Response({
-                'message': 'State saved successfully'
-            }, status=status.HTTP_201_CREATED)
+            return Response({"message": "State saved successfully"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"Failed to save OAuth state: {e}")
-            return Response({
-                'error': 'Failed to save state'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": "Failed to save state"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

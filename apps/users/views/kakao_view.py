@@ -3,8 +3,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.users.utils.jwt import JWTService
-from ..serializers import KakaoLoginSerializer, UserSerializer
 from apps.users.utils.social_auth import SocialAuthService
+
+from ..serializers import KakaoLoginSerializer, UserSerializer
 from ..social_login.kakao_service import KakaoService
 from ..utils.cache_oauth_state import OAuthStateService
 
@@ -22,14 +23,12 @@ class KakaoLoginView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         authorization_code = serializer.validated_data["code"]
-        state = serializer.validated_data['state']
+        state = serializer.validated_data["state"]
 
         try:
             # 1. State 검증 및 소비
             if not OAuthStateService.verify_and_consume_state(state):
-                return Response({
-                    'error': 'Invalid or expired state'
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
 
             # 2. 카카오에서 access token 획득
             token_data = KakaoService.get_access_token(authorization_code)

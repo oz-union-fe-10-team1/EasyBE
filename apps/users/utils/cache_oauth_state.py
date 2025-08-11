@@ -1,9 +1,11 @@
-from django.core.cache import cache
-from django.conf import settings
-import requests
 import logging
 
+import requests
+from django.conf import settings
+from django.core.cache import cache
+
 logger = logging.getLogger(__name__)
+
 
 class OAuthStateService:
     """OAuth State 관리 서비스"""
@@ -14,11 +16,7 @@ class OAuthStateService:
         cache_key = f"oauth_state:{state_value}"
 
         # 5분간 저장
-        cache.set(
-            cache_key,
-            True,
-            timeout=settings.OAUTH_STATE_EXPIRE_SECONDS
-        )
+        cache.set(cache_key, True, timeout=settings.OAUTH_STATE_EXPIRE_SECONDS)
 
         logger.info(f"OAuth state saved: {state_value[:8]}...")
         return True

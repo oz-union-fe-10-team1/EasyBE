@@ -2,9 +2,12 @@ from rest_framework import serializers
 
 from .models import User
 
+
 class StateSerializer(serializers.Serializer):
     """소셜 로그인 용 state"""
+
     state = serializers.CharField(help_text="임시 저장할 state 값")
+
 
 class KakaoLoginSerializer(serializers.Serializer):
     """카카오 로그인 요청 데이터"""

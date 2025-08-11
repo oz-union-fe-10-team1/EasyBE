@@ -5,8 +5,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.users.utils.jwt import JWTService
-from ..serializers import GoogleLoginSerializer, UserSerializer
 from apps.users.utils.social_auth import SocialAuthService
+
+from ..serializers import GoogleLoginSerializer, UserSerializer
 from ..social_login.google_service import GoogleService
 from ..utils.cache_oauth_state import OAuthStateService
 
@@ -29,9 +30,7 @@ class GoogleLoginView(APIView):
         try:
             # 1. State 검증 및 소비
             if not OAuthStateService.verify_and_consume_state(state):
-                return Response({
-                    'error': 'Invalid or expired state'
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
 
             # 2. 구글에서 access token 획득
             token_data = GoogleService.get_access_token(authorization_code)
