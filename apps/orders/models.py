@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -130,8 +132,8 @@ class OrderItem(models.Model):
                 return True
             else:
                 raise ValueError("재고가 부족합니다")
-        except:
-            raise ValueError("해당 매장에 재고가 없습니다")
+        except self.product.stocks.model.DoesNotExist:
+            raise ValueError("해당 매장에 재고 정보가 없습니다")
 
     def restore_stock(self):
         """재고 복구 (주문 취소 시)"""

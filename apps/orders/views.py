@@ -1,83 +1,75 @@
+from datetime import date
+
 from django.db import transaction
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.cart.models import Cart
+from apps.cart.models import CartItem
 from apps.orders.models import Order, OrderItem
 from apps.orders.serializers import OrderSerializer
-from apps.products.models import Product
+from apps.stores.models import Store
 
 
-class OrderViewSet(viewsets.GenericViewSet):
+class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
-    # authentication_classes를 명시하지 않아 settings.py의 기본값을 따르도록 함
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user).prefetch_related(
-            'items__feedback'
+            "items__product", "items__pickup_store"
         )
 
-    def list(self, request, *args, **kwargs):
+    @action(detail=False, methods=["post"])
+    def create_from_cart(self, request, *args, **kwargs):
         """
-        주문 목록을 조회합니다.
-        GET /api/orders/list/
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
-    def create(self, request, *args, **kwargs):
-        """
-        장바구니 기반으로 주문을 생성합니다.
-        POST /api/orders/
+        장바구니의 모든 상품으로 주문을 생성합니다.
+        재고 확인 및 차감, 장바구니 비우기 로직을 포함합니다.
         """
         user = request.user
+        cart_items = CartItem.objects.filter(user=user)
+
+        if not cart_items.exists():
+            return Response({"detail": "장바구니가 비어있습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            cart = Cart.objects.get(user=user)
-            cart_items = cart.items.all()
-
-            if not cart_items.exists():
-                return Response(
-                    {"detail": "장바구니가 비어있습니다."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
             with transaction.atomic():
-                total_price = sum(item.subtotal for item in cart_items)
+                # 가정: 첫 번째 매장을 픽업 매장으로 고정
+                pickup_store = Store.objects.first()
+                if not pickup_store:
+                    raise Store.DoesNotExist
+
+                total_price = sum(item.total_price for item in cart_items)
+
+                # 1. 주문 생성
                 order = Order.objects.create(user=user, total_price=total_price)
 
-                order_items = []
-                for cart_item in cart_items:
-                    order_items.append(
-                        OrderItem(
-                            order=order,
-                            product=cart_item.product,
-                            quantity=cart_item.quantity,
-                            price=cart_item.product.price,
-                        )
+                # 2. 주문 항목 생성 및 재고 차감
+                order_items_to_create = []
+                for item in cart_items:
+                    order_item = OrderItem(
+                        order=order,
+                        product=item.product,
+                        price=item.product.price,  # 주문 당시 가격 기록
+                        quantity=item.quantity,
+                        pickup_store=pickup_store,
+                        pickup_day=date.today(), # 픽업 날짜를 오늘로 우선 설정
                     )
-                OrderItem.objects.bulk_create(order_items)
+                    # 모델에 정의된 재고 차감 메소드 사용 (ValueError 발생 시 트랜잭션 롤백)
+                    order_item.reserve_stock()
+                    order_items_to_create.append(order_item)
 
-                cart.items.all().delete()
-                cart.delete()
+                OrderItem.objects.bulk_create(order_items_to_create)
 
-            serializer = self.get_serializer(order)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+                # 3. 장바구니 비우기
+                cart_items.delete()
 
-        except Cart.DoesNotExist:
-            return Response(
-                {"detail": "장바구니를 찾을 수 없습니다."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except Product.DoesNotExist:
-            return Response(
-                {"detail": "장바구니에 존재하지 않는 상품이 포함되어 있습니다."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except Exception as e:
-            return Response(
-                {"detail": f"주문 생성 중 오류 발생: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+                serializer = self.get_serializer(order)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Store.DoesNotExist:
+            return Response({"detail": "매장 정보를 찾을 수 없습니다. 먼저 매장을 생성해주세요."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except ValueError as e:
+            # 재고 부족 또는 재고 정보 없음 오류 처리
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
