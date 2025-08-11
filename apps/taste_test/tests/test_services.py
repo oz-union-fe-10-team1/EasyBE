@@ -4,11 +4,11 @@ TasteTestService 테스트
 """
 
 import pytest
-from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.test import TestCase
 
-from ..services import TasteTestService, TASTE_QUESTIONS, ANSWER_SCORE_MAPPING
 from ..models import TasteTestResult
+from ..services import ANSWER_SCORE_MAPPING, TASTE_QUESTIONS, TasteTestService
 
 User = get_user_model()
 
@@ -17,10 +17,7 @@ class TasteTestServiceTest(TestCase):
     """TasteTestService 테스트"""
 
     def setUp(self):
-        self.user = User.objects.create_user(
-            username="testuser",
-            email="test@example.com"
-        )
+        self.user = User.objects.create_user(username="testuser", email="test@example.com")
 
     def test_get_questions(self):
         """질문 목록 반환 테스트"""
@@ -42,17 +39,12 @@ class TasteTestServiceTest(TestCase):
             "Q3": "A",  # 상큼톡톡파 +1
             "Q4": "A",  # 묵직여운파 +1
             "Q5": "A",  # 깔끔고소파 +1
-            "Q6": "A"  # 달콤과일파 +1
+            "Q6": "A",  # 달콤과일파 +1
         }
 
         scores = TasteTestService.calculate_scores(answers)
 
-        expected = {
-            "달콤과일파": 3,
-            "상큼톡톡파": 1,
-            "묵직여운파": 1,
-            "깔끔고소파": 1
-        }
+        expected = {"달콤과일파": 3, "상큼톡톡파": 1, "묵직여운파": 1, "깔끔고소파": 1}
 
         self.assertEqual(scores, expected)
 
@@ -60,12 +52,7 @@ class TasteTestServiceTest(TestCase):
         """빈 답변 점수 계산 테스트"""
         scores = TasteTestService.calculate_scores({})
 
-        expected = {
-            "달콤과일파": 0,
-            "상큼톡톡파": 0,
-            "묵직여운파": 0,
-            "깔끔고소파": 0
-        }
+        expected = {"달콤과일파": 0, "상큼톡톡파": 0, "묵직여운파": 0, "깔끔고소파": 0}
 
         self.assertEqual(scores, expected)
 
@@ -79,23 +66,13 @@ class TasteTestServiceTest(TestCase):
 
         scores = TasteTestService.calculate_scores(answers)
 
-        expected = {
-            "달콤과일파": 1,
-            "상큼톡톡파": 0,
-            "묵직여운파": 0,
-            "깔끔고소파": 0
-        }
+        expected = {"달콤과일파": 1, "상큼톡톡파": 0, "묵직여운파": 0, "깔끔고소파": 0}
 
         self.assertEqual(scores, expected)
 
     def test_determine_type_single_high_score(self):
         """3점 이상 단일 유형 테스트"""
-        scores = {
-            "달콤과일파": 4,
-            "상큼톡톡파": 1,
-            "묵직여운파": 1,
-            "깔끔고소파": 0
-        }
+        scores = {"달콤과일파": 4, "상큼톡톡파": 1, "묵직여운파": 1, "깔끔고소파": 0}
 
         result_type = TasteTestService.determine_type(scores)
         self.assertEqual(result_type, "달콤과일파")
@@ -156,7 +133,7 @@ class TasteTestServiceTest(TestCase):
             "Q3": "A",  # 상큼톡톡파
             "Q4": "B",  # 상큼톡톡파
             "Q5": "A",  # 깔끔고소파
-            "Q6": "A"  # 달콤과일파
+            "Q6": "A",  # 달콤과일파
         }
 
         result = TasteTestService.process_taste_test(answers)
@@ -172,14 +149,7 @@ class TasteTestServiceTest(TestCase):
 
     def test_validate_answers_valid(self):
         """유효한 답변 검증 테스트"""
-        valid_answers = {
-            "Q1": "A",
-            "Q2": "B",
-            "Q3": "A",
-            "Q4": "B",
-            "Q5": "A",
-            "Q6": "B"
-        }
+        valid_answers = {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}
 
         errors = TasteTestService.validate_answers(valid_answers)
         self.assertEqual(errors, {})
@@ -188,7 +158,7 @@ class TasteTestServiceTest(TestCase):
         """누락된 질문 검증 테스트"""
         incomplete_answers = {
             "Q1": "A",
-            "Q2": "B"
+            "Q2": "B",
             # Q3, Q4, Q5, Q6 누락
         }
 
@@ -199,8 +169,13 @@ class TasteTestServiceTest(TestCase):
     def test_validate_answers_extra_questions(self):
         """추가 질문 검증 테스트"""
         answers_with_extra = {
-            "Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B",
-            "Q7": "A"  # 존재하지 않는 질문
+            "Q1": "A",
+            "Q2": "B",
+            "Q3": "A",
+            "Q4": "B",
+            "Q5": "A",
+            "Q6": "B",
+            "Q7": "A",  # 존재하지 않는 질문
         }
 
         errors = TasteTestService.validate_answers(answers_with_extra)
@@ -215,7 +190,7 @@ class TasteTestServiceTest(TestCase):
             "Q3": "A",
             "Q4": "B",
             "Q5": "X",  # A, B만 유효
-            "Q6": "B"
+            "Q6": "B",
         }
 
         errors = TasteTestService.validate_answers(invalid_answers)
@@ -225,9 +200,7 @@ class TasteTestServiceTest(TestCase):
 
     def test_save_test_result_new_user(self):
         """새 사용자 테스트 결과 저장"""
-        answers = {
-            "Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"
-        }
+        answers = {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}
 
         result = TasteTestService.save_test_result(self.user, answers)
 
@@ -240,16 +213,12 @@ class TasteTestServiceTest(TestCase):
     def test_save_test_result_update_existing(self):
         """기존 사용자 테스트 결과 업데이트"""
         # 첫 번째 테스트
-        first_answers = {
-            "Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"
-        }
+        first_answers = {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}
         first_result = TasteTestService.save_test_result(self.user, first_answers)
         first_id = first_result.id
 
         # 두 번째 테스트 (업데이트)
-        second_answers = {
-            "Q1": "B", "Q2": "A", "Q3": "B", "Q4": "A", "Q5": "B", "Q6": "A"
-        }
+        second_answers = {"Q1": "B", "Q2": "A", "Q3": "B", "Q4": "A", "Q5": "B", "Q6": "A"}
         second_result = TasteTestService.save_test_result(self.user, second_answers)
 
         # 같은 객체가 업데이트되어야 함
@@ -271,7 +240,7 @@ class TasteTestServiceScenarioTest(TestCase):
             "Q5": "B",  # 과일향기 (달콤과일파)
             "Q6": "A",  # 강렬한 술 (달콤과일파)
             "Q3": "A",  # 실패없는 맛 (상큼톡톡파)
-            "Q4": "B"  # 가벼운 목넘김 (상큼톡톡파)
+            "Q4": "B",  # 가벼운 목넘김 (상큼톡톡파)
         }
 
         result = TasteTestService.process_taste_test(answers)
@@ -285,7 +254,7 @@ class TasteTestServiceScenarioTest(TestCase):
             "Q3": "A",  # 상큼톡톡파 +1 (총 2점)
             "Q4": "A",  # 묵직여운파 +1
             "Q5": "A",  # 깔끔고소파 +1
-            "Q6": "B"  # 묵직여운파 +1 (총 2점)
+            "Q6": "B",  # 묵직여운파 +1 (총 2점)
         }
 
         result = TasteTestService.process_taste_test(answers)
@@ -300,7 +269,7 @@ class TasteTestServiceScenarioTest(TestCase):
             "Q3": "B",  # 깔끔고소파 +1
             "Q4": "B",  # 상큼톡톡파 +1
             "Q5": "A",  # 깔끔고소파 +1 (총 2점)
-            "Q6": "B"  # 묵직여운파 +1
+            "Q6": "B",  # 묵직여운파 +1
         }
 
         result = TasteTestService.process_taste_test(answers)
@@ -315,7 +284,7 @@ class TasteTestServiceScenarioTest(TestCase):
             "Q3": "B",  # 깔끔고소파 +1
             "Q4": "A",  # 묵직여운파 +1
             "Q5": "B",  # 달콤과일파 +1 (총 2점)
-            "Q6": "B"  # 묵직여운파 +1 (총 2점)
+            "Q6": "B",  # 묵직여운파 +1 (총 2점)
         }
 
         result = TasteTestService.process_taste_test(answers)
@@ -391,7 +360,7 @@ class TasteTestServiceEdgeCaseTest(TestCase):
             "Q3": "B",  # 대문자 (유효)
             "q4": "A",  # 소문자 질문 ID (무시)
             "Q5": "B",  # 대문자 (유효)
-            "Q6": "b"  # 소문자 (무시)
+            "Q6": "b",  # 소문자 (무시)
         }
 
         scores = TasteTestService.calculate_scores(mixed_case_answers)

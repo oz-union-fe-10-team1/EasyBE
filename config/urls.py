@@ -31,12 +31,11 @@ urlpatterns = [
     path("api/", include(("apps.products.urls", "products"), namespace="api")),
     # path("api/v1/cart/", include("apps.cart.urls")),
     # path("api/v1/taste-test/", include("apps.taste_test.urls")),
-
     # 임시
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
-    path("__debug__/", include("debug_toolbar.urls"))
+    path("__debug__/", include("debug_toolbar.urls")),
 ]
 
 # if settings.DEBUG:
