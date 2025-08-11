@@ -1,362 +1,342 @@
-# # apps/products/serializers/product.py
-#
-# from decimal import Decimal
-#
-# from rest_framework import serializers
-#
-# from apps.products.models import Product, ProductTasteTag, TasteTag
-#
-# from .brewery import BrewerySerializer
-# from .metadata import AlcoholTypeSerializer, ProductCategorySerializer, RegionSerializer
-#
-#
-# class ProductTasteTagSerializer(serializers.ModelSerializer):
-#     """제품-맛태그 중간 테이블 Serializer"""
-#
-#     class Meta:
-#         model = ProductTasteTag
-#         fields = ["taste_tag", "intensity"]
-#
-#     def to_representation(self, instance):
-#         """응답 시 맛태그 정보도 포함"""
-#         data = super().to_representation(instance)
-#         data["taste_tag_name"] = instance.taste_tag.name
-#         data["taste_tag_category"] = instance.taste_tag.get_category_display()
-#         data["color_code"] = instance.taste_tag.color_code
-#         return data
-#
-#
-# class ProductListSerializer(serializers.ModelSerializer):
-#     """제품 목록용 Serializer (간소화된 필드)"""
-#
-#     brewery = BrewerySerializer(read_only=True)
-#     alcohol_type = AlcoholTypeSerializer(read_only=True)
-#     region = RegionSerializer(read_only=True)
-#
-#     # Property 필드들
-#     is_available = serializers.ReadOnlyField()
-#     discount_rate = serializers.ReadOnlyField()
-#     main_image_url = serializers.ReadOnlyField()
-#
-#     class Meta:
-#         model = Product
-#         fields = [
-#             "id",
-#             "name",
-#             "brewery",
-#             "alcohol_type",
-#             "region",
-#             "price",
-#             "original_price",
-#             "discount_rate",
-#             "alcohol_content",
-#             "volume_ml",
-#             "main_image_url",
-#             "is_available",
-#             # 맛 프로필 (완전한 필드들)
-#             "sweetness_level",
-#             "acidity_level",
-#             "body_level",
-#             "carbonation_level",
-#             "bitterness_level",
-#             "aroma_level",  # 추가
-#             "flavor_notes",
-#             "short_description",
-#             "is_gift_suitable",
-#             "is_award_winning",
-#             "is_regional_specialty",
-#             "view_count",
-#             "order_count",
-#             "like_count",
-#             "average_rating",
-#             "status",
-#             "is_featured",
-#             "created_at",
-#         ]
-#
-#
-# class ProductDetailSerializer(serializers.ModelSerializer):
-#     """제품 상세용 Serializer (모든 필드)"""
-#
-#     brewery = BrewerySerializer(read_only=True)
-#     alcohol_type = AlcoholTypeSerializer(read_only=True)
-#     region = RegionSerializer(read_only=True)
-#     category = ProductCategorySerializer(read_only=True)
-#
-#     # Property 필드들
-#     is_available = serializers.ReadOnlyField()
-#     discount_rate = serializers.ReadOnlyField()
-#     main_image_url = serializers.ReadOnlyField()
-#     taste_profile_vector = serializers.ReadOnlyField()
-#
-#     # 맛 태그 관계
-#     taste_tags_detail = ProductTasteTagSerializer(source="producttastetag_set", many=True, read_only=True)
-#
-#     class Meta:
-#         model = Product
-#         fields = "__all__"
-#
-#     def to_representation(self, instance):
-#         """응답 데이터 후처리"""
-#         data = super().to_representation(instance)
-#
-#         # 가격을 문자열로 변환 (프론트엔드 호환성)
-#         if data.get("price"):
-#             data["price"] = str(data["price"])
-#         if data.get("original_price"):
-#             data["original_price"] = str(data["original_price"])
-#
-#         return data
-#
-#
-# class ProductCreateSerializer(serializers.ModelSerializer):
-#     """제품 생성용 Serializer"""
-#
-#     # 맛 태그 관계 처리를 위한 필드
-#     taste_tags = serializers.ListField(
-#         child=serializers.DictField(),
-#         write_only=True,
-#         required=False,
-#         help_text="맛 태그 배열: [{'taste_tag': 1, 'intensity': 2.5}]",
-#     )
-#
-#     class Meta:
-#         model = Product
-#         fields = [
-#             # 기본 정보
-#             "name",
-#             "brewery",
-#             "alcohol_type",
-#             "region",
-#             "category",
-#             # 상품 상세
-#             "description",
-#             "ingredients",
-#             "alcohol_content",
-#             "volume_ml",
-#             # 가격 정보
-#             "price",
-#             "original_price",
-#             # 재고 관리
-#             "stock_quantity",
-#             "min_stock_alert",
-#             # 맛 프로필
-#             "sweetness_level",
-#             "acidity_level",
-#             "body_level",
-#             "carbonation_level",
-#             "bitterness_level",
-#             "aroma_level",
-#             # 제품 특성
-#             "is_gift_suitable",
-#             "is_award_winning",
-#             "is_regional_specialty",
-#             "is_limited_edition",
-#             "is_premium",
-#             "is_organic",
-#             # UI 표시용
-#             "flavor_notes",
-#             "short_description",
-#             "package_name",
-#             # 상태 관리
-#             "status",
-#             "is_featured",
-#             "launch_date",
-#             # SEO
-#             "meta_title",
-#             "meta_description",
-#             # 맛 태그
-#             "taste_tags",
-#         ]
-#
-#         # 필수 필드 명시
-#         extra_kwargs = {
-#             "alcohol_type": {"required": True},
-#             "name": {"required": True},
-#             "brewery": {"required": True},
-#             "description": {"required": True},
-#             "ingredients": {"required": True},
-#             "alcohol_content": {"required": True},
-#             "volume_ml": {"required": True},
-#             "price": {"required": True},
-#         }
-#
-#     def validate_price(self, value):
-#         """가격 유효성 검사"""
-#         if value < 0:
-#             raise serializers.ValidationError("가격은 0 이상이어야 합니다.")
-#         return value
-#
-#     def validate_original_price(self, value):
-#         """정가 유효성 검사"""
-#         if value is not None and value < 0:
-#             raise serializers.ValidationError("정가는 0 이상이어야 합니다.")
-#         return value
-#
-#     def validate_alcohol_content(self, value):
-#         """알코올 도수 유효성 검사"""
-#         if not 0.0 <= value <= 100.0:
-#             raise serializers.ValidationError("알코올 도수는 0.0~100.0 사이여야 합니다.")
-#         return value
-#
-#     def validate_volume_ml(self, value):
-#         """용량 유효성 검사"""
-#         if value <= 0:
-#             raise serializers.ValidationError("용량은 0보다 커야 합니다.")
-#         return value
-#
-#     def validate_stock_quantity(self, value):
-#         """재고 수량 유효성 검사"""
-#         if value < 0:
-#             raise serializers.ValidationError("재고 수량은 0 이상이어야 합니다.")
-#         return value
-#
-#     def validate_taste_profile(self, attrs):
-#         """맛 프로필 필드 통합 유효성 검사"""
-#         taste_fields = {
-#             "sweetness_level": "단맛",
-#             "acidity_level": "산미",
-#             "body_level": "바디감",
-#             "carbonation_level": "탄산감",
-#             "bitterness_level": "쓴맛:누룩맛",
-#             "aroma_level": "향",
-#         }
-#
-#         errors = {}
-#
-#         for field_name, field_display in taste_fields.items():
-#             value = attrs.get(field_name)
-#
-#             # 값이 제공된 경우에만 검증
-#             if value is not None:
-#                 if not isinstance(value, (int, float)):
-#                     errors[field_name] = f"{field_display} 지수는 숫자여야 합니다."
-#                 elif not 0.0 <= value <= 5.0:
-#                     errors[field_name] = f"{field_display} 지수는 0.0~5.0 사이여야 합니다."
-#
-#         if errors:
-#             raise serializers.ValidationError(errors)
-#
-#         return attrs
-#
-#     def validate(self, attrs):
-#         """전체 데이터 유효성 검사"""
-#         # 정가와 판매가 비교
-#         attrs = self.validate_taste_profile(attrs)
-#
-#         original_price = attrs.get("original_price")
-#         price = attrs.get("price")
-#
-#         if original_price and price and original_price < price:
-#             raise serializers.ValidationError({"original_price": "정가는 판매가보다 크거나 같아야 합니다."})
-#
-#         return attrs
-#
-#     def create(self, validated_data):
-#         """제품 생성"""
-#         # 맛 태그 데이터 분리
-#         taste_tags_data = validated_data.pop("taste_tags", [])
-#
-#         # 제품 생성
-#         product = Product.objects.create(**validated_data)
-#
-#         # 맛 태그 관계 생성
-#         for taste_tag_data in taste_tags_data:
-#             taste_tag_id = taste_tag_data.get("taste_tag")
-#             intensity = taste_tag_data.get("intensity", 1.0)
-#
-#             try:
-#                 taste_tag = TasteTag.objects.get(id=taste_tag_id)
-#                 ProductTasteTag.objects.create(product=product, taste_tag=taste_tag, intensity=intensity)
-#             except TasteTag.DoesNotExist:
-#                 # 존재하지 않는 맛 태그는 무시 (또는 에러 발생)
-#                 continue
-#
-#         return product
-#
-#     def to_representation(self, instance):
-#         """생성 후 응답은 DetailSerializer 형식으로"""
-#         return ProductDetailSerializer(instance, context=self.context).data
-#
-#
-# class ProductUpdateSerializer(serializers.ModelSerializer):
-#     """제품 수정용 Serializer"""
-#
-#     # 맛 태그 관계 처리
-#     taste_tags = serializers.ListField(child=serializers.DictField(), write_only=True, required=False)
-#
-#     class Meta:
-#         model = Product
-#         fields = [
-#             "name",
-#             "description",
-#             "ingredients",
-#             "alcohol_content",
-#             "volume_ml",
-#             "price",
-#             "original_price",
-#             "stock_quantity",
-#             "min_stock_alert",
-#             "sweetness_level",
-#             "acidity_level",
-#             "bitterness_level",
-#             "carbonation_level",
-#             "body_level",
-#             "aroma_level",
-#             "is_gift_suitable",
-#             "is_award_winning",
-#             "is_regional_specialty",
-#             "is_limited_edition",
-#             "is_premium",
-#             "is_organic",
-#             "flavor_notes",
-#             "short_description",
-#             "package_name",
-#             "status",
-#             "is_featured",
-#             "launch_date",
-#             "meta_title",
-#             "meta_description",
-#             "taste_tags",
-#         ]
-#
-#     # ProductCreateSerializer의 모든 validate 메서드 동일하게 적용
-#     validate_price = ProductCreateSerializer.validate_price
-#     validate_original_price = ProductCreateSerializer.validate_original_price
-#     validate_alcohol_content = ProductCreateSerializer.validate_alcohol_content
-#     validate_volume_ml = ProductCreateSerializer.validate_volume_ml
-#     validate_stock_quantity = ProductCreateSerializer.validate_stock_quantity
-#     validate_taste_profile = ProductCreateSerializer.validate_taste_profile
-#     validate = ProductCreateSerializer.validate
-#
-#     def update(self, instance, validated_data):
-#         """제품 수정"""
-#         # 맛 태그 데이터 분리
-#         taste_tags_data = validated_data.pop("taste_tags", None)
-#
-#         # 기본 필드 업데이트
-#         for attr, value in validated_data.items():
-#             setattr(instance, attr, value)
-#         instance.save()
-#
-#         # 맛 태그 관계 업데이트
-#         if taste_tags_data is not None:
-#             # 기존 맛 태그 관계 삭제
-#             instance.producttastetag_set.all().delete()
-#
-#             # 새로운 맛 태그 관계 생성
-#             for taste_tag_data in taste_tags_data:
-#                 taste_tag_id = taste_tag_data.get("taste_tag")
-#                 intensity = taste_tag_data.get("intensity", 1.0)
-#
-#                 try:
-#                     taste_tag = TasteTag.objects.get(id=taste_tag_id)
-#                     ProductTasteTag.objects.create(product=instance, taste_tag=taste_tag, intensity=intensity)
-#                 except TasteTag.DoesNotExist:
-#                     continue
-#
-#         return instance
-#
-#     def to_representation(self, instance):
-#         """수정 후 응답은 DetailSerializer 형식으로"""
-#         return ProductDetailSerializer(instance, context=self.context).data
+# apps/products/serializers/product.py
+from decimal import Decimal
+
+from django.db import transaction
+from rest_framework import serializers
+
+from apps.products.models import Drink, Package, Product, ProductImage
+
+from .drink import DrinkSerializer
+from .package import PackageSerializer
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    """상품 이미지 시리얼라이저"""
+
+    class Meta:
+        model = ProductImage
+        fields = ["image_url", "is_main", "created_at"]
+
+
+class ProductListSerializer(serializers.ModelSerializer):
+    """상품 목록용 시리얼라이저"""
+
+    name = serializers.SerializerMethodField()
+    product_type = serializers.SerializerMethodField()
+    main_image_url = serializers.SerializerMethodField()
+    brewery_name = serializers.SerializerMethodField()
+    alcohol_type = serializers.SerializerMethodField()
+
+    # 할인 관련 계산 필드
+    discount_rate = serializers.SerializerMethodField()
+    final_price = serializers.SerializerMethodField()
+    is_on_sale = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            "id",
+            "name",
+            "product_type",
+            "price",
+            "original_price",
+            "discount",
+            "discount_rate",
+            "final_price",
+            "is_on_sale",
+            "main_image_url",
+            "brewery_name",
+            "alcohol_type",
+            "is_gift_suitable",
+            "is_regional_specialty",
+            "is_limited_edition",
+            "is_premium",
+            "is_award_winning",
+            "view_count",
+            "like_count",
+            "status",
+            "created_at",
+        ]
+
+    def get_name(self, obj):
+        return obj.name
+
+    def get_product_type(self, obj):
+        return obj.product_type
+
+    def get_main_image_url(self, obj):
+        """메인 이미지 URL 반환"""
+        main_image = obj.images.filter(is_main=True).first()
+        return main_image.image_url if main_image else None
+
+    def get_brewery_name(self, obj):
+        """양조장명 반환"""
+        if obj.drink:
+            return obj.drink.brewery.name
+        return None
+
+    def get_alcohol_type(self, obj):
+        """주종 반환"""
+        if obj.drink:
+            return obj.drink.alcohol_type
+        return None
+
+    def get_discount_rate(self, obj):
+        """할인율 반환"""
+        return obj.get_discount_rate()
+
+    def get_final_price(self, obj):
+        """최종 가격 반환"""
+        return obj.get_final_price()
+
+    def get_is_on_sale(self, obj):
+        """할인 중 여부 반환"""
+        return obj.is_on_sale()
+
+
+class ProductDetailSerializer(serializers.ModelSerializer):
+    """상품 상세 시리얼라이저"""
+
+    name = serializers.SerializerMethodField()
+    product_type = serializers.SerializerMethodField()
+    drink = DrinkSerializer(read_only=True)
+    package = PackageSerializer(read_only=True)
+    images = ProductImageSerializer(many=True, read_only=True)
+
+    discount_rate = serializers.SerializerMethodField()
+    final_price = serializers.SerializerMethodField()
+    is_on_sale = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            "id",
+            "name",
+            "product_type",
+            "drink",
+            "package",
+            "price",
+            "original_price",
+            "discount",
+            "discount_rate",
+            "final_price",
+            "is_on_sale",
+            "description",
+            "description_image_url",
+            "is_gift_suitable",
+            "is_award_winning",
+            "is_regional_specialty",
+            "is_limited_edition",
+            "is_premium",
+            "is_organic",
+            "view_count",
+            "order_count",
+            "like_count",
+            "review_count",
+            "status",
+            "images",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_name(self, obj):
+        return obj.name
+
+    def get_product_type(self, obj):
+        return obj.product_type
+
+    def get_discount_rate(self, obj):
+        return obj.get_discount_rate()
+
+    def get_final_price(self, obj):
+        return obj.get_final_price()
+
+    def get_is_on_sale(self, obj):
+        return obj.is_on_sale()
+
+
+class ProductImageCreateSerializer(serializers.ModelSerializer):
+    """상품 이미지 생성용 시리얼라이저"""
+
+    class Meta:
+        model = ProductImage
+        fields = ["image_url", "is_main"]
+
+    def validate_image_url(self, value):
+        """이미지 URL 유효성 검사"""
+        if not value or not value.strip():
+            raise serializers.ValidationError("이미지 URL은 필수입니다.")
+        return value.strip()
+
+
+class ProductBaseCreateSerializer(serializers.Serializer):
+    """상품 생성 기본 시리얼라이저"""
+
+    # 가격 정보
+    price = serializers.IntegerField(min_value=0)
+    original_price = serializers.IntegerField(min_value=0, required=False, allow_null=True)
+    discount = serializers.IntegerField(min_value=0, required=False, allow_null=True)
+
+    # 상품 설명
+    description = serializers.CharField()
+    description_image_url = serializers.URLField()
+
+    # 상품 특성
+    is_gift_suitable = serializers.BooleanField(default=False)
+    is_award_winning = serializers.BooleanField(default=False)
+    is_regional_specialty = serializers.BooleanField(default=False)
+    is_limited_edition = serializers.BooleanField(default=False)
+    is_premium = serializers.BooleanField(default=False)
+    is_organic = serializers.BooleanField(default=False)
+
+    # 이미지
+    images = ProductImageCreateSerializer(many=True)
+
+    def validate(self, attrs):
+        """공통 유효성 검사"""
+        original_price = attrs.get("original_price")
+        discount = attrs.get("discount")
+
+        # 할인이 있다면 정가도 있어야 함
+        if discount and not original_price:
+            raise serializers.ValidationError({"original_price": "할인이 있을 경우 정가는 필수입니다."})
+
+        # 할인금액이 정가보다 클 수 없음
+        if original_price and discount and discount > original_price:
+            raise serializers.ValidationError({"discount": "할인금액이 정가보다 클 수 없습니다."})
+
+        return attrs
+
+    def validate_images(self, value):
+        """이미지 유효성 검사"""
+        if not value:
+            raise serializers.ValidationError("최소 1개의 이미지는 필요합니다.")
+
+        # 메인 이미지 체크
+        main_images = [img for img in value if img.get("is_main")]
+        if len(main_images) != 1:
+            raise serializers.ValidationError("메인 이미지는 정확히 1개여야 합니다.")
+
+        if len(value) > 5:
+            raise serializers.ValidationError("이미지는 최대 5개까지 업로드 가능합니다.")
+
+        return value
+
+    def create_product_images(self, product, images_data):
+        """상품 이미지들 생성"""
+        for image_data in images_data:
+            ProductImage.objects.create(product=product, **image_data)
+
+
+class IndividualProductCreateSerializer(ProductBaseCreateSerializer):
+    """개별 상품 생성용 시리얼라이저"""
+
+    drink_info = DrinkSerializer()
+
+    @transaction.atomic
+    def create(self, validated_data):
+        """개별 상품 생성 (트랜잭션)"""
+        drink_data = validated_data.pop("drink_info")
+        images_data = validated_data.pop("images")
+
+        # 1. 술 생성
+        drink_serializer = DrinkSerializer(data=drink_data)
+        drink_serializer.is_valid(raise_exception=True)
+        drink = drink_serializer.save()
+
+        # 2. 상품 생성
+        product = Product.objects.create(drink=drink, **validated_data)
+
+        # 3. 이미지들 생성
+        self.create_product_images(product, images_data)
+
+        return product
+
+    def to_representation(self, instance):
+        """응답 시리얼라이저"""
+        return ProductDetailSerializer(instance).data
+
+
+class PackageProductCreateSerializer(ProductBaseCreateSerializer):
+    """패키지 상품 생성용 시리얼라이저"""
+
+    package_info = PackageSerializer()
+
+    @transaction.atomic
+    def create(self, validated_data):
+        """패키지 상품 생성 (트랜잭션)"""
+        package_data = validated_data.pop("package_info")
+        images_data = validated_data.pop("images")
+
+        # 1. 패키지 생성
+        package_serializer = PackageSerializer(data=package_data)
+        package_serializer.is_valid(raise_exception=True)
+        package = package_serializer.save()
+
+        # 2. 상품 생성
+        product = Product.objects.create(package=package, **validated_data)
+
+        # 3. 이미지들 생성
+        self.create_product_images(product, images_data)
+
+        return product
+
+    def to_representation(self, instance):
+        """응답 시리얼라이저"""
+        return ProductDetailSerializer(instance).data
+
+
+class ProductFilterSerializer(serializers.Serializer):
+    """상품 필터링용 시리얼라이저 (UI 기반)"""
+
+    # 체크박스 필터들 (UI 상세 검색)
+    is_gift_suitable = serializers.BooleanField(required=False)
+    is_regional_specialty = serializers.BooleanField(required=False)
+    is_award_winning = serializers.BooleanField(required=False)
+    is_limited_edition = serializers.BooleanField(required=False)
+
+    # 맛 프로필 슬라이더들 (0.0 ~ 5.0)
+    sweetness_level = serializers.DecimalField(
+        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
+    )
+    acidity_level = serializers.DecimalField(
+        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
+    )
+    bitterness_level = serializers.DecimalField(
+        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
+    )
+    body_level = serializers.DecimalField(
+        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
+    )
+    carbonation_level = serializers.DecimalField(
+        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
+    )
+    aroma_level = serializers.DecimalField(
+        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
+    )
+
+    # 검색
+    search = serializers.CharField(max_length=100, required=False)
+
+    # 정렬
+    ordering = serializers.ChoiceField(
+        choices=[
+            "price",
+            "-price",
+            "created_at",
+            "-created_at",
+            "view_count",
+            "-view_count",
+            "like_count",
+            "-like_count",
+        ],
+        required=False,
+        default="-created_at",
+    )
+
+
+class ProductLikeSerializer(serializers.Serializer):
+    """상품 좋아요 응답용 시리얼라이저"""
+
+    is_liked = serializers.BooleanField()
+    like_count = serializers.IntegerField()
