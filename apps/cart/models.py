@@ -8,7 +8,7 @@ class CartItem(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cart_items")
     product = models.ForeignKey("products.Product", on_delete=models.CASCADE, related_name="cart_items")
-    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)], help_text="수량")
+    quantity = models.PositiveIntegerField(default=1, help_text="수량")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -48,7 +48,8 @@ class CartItemSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user
         # 이미 장바구니에 있는 상품이면 수량만 더해줌
-        product = validated_data.get("product")
+        product_id = validated_data.get("product_id")
+        product = Product.objects.get(id=product_id)
         quantity = validated_data.get("quantity")
         cart_item, created = CartItem.objects.get_or_create(
             user=validated_data["user"],
@@ -70,7 +71,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         if quantity <= 0:
             instance.delete()
             return None  # 삭제된 경우 아무것도 반환하지 않음
-
-        instance.quantity = quantity
-        instance.save()
-        return instance
+        else:
+            instance.quantity = quantity
+            instance.save()
+            return instance

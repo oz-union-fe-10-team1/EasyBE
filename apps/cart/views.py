@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -7,15 +7,6 @@ from .serializers import CartItemSerializer
 
 
 class CartItemViewSet(viewsets.ModelViewSet):
-    """
-    장바구니 항목 관리 ViewSet
-
-    - list: 사용자의 장바구니에 담긴 모든 항목과 총액을 조회합니다.
-    - create: 장바구니에 새로운 상품을 추가합니다.
-    - update/partial_update: 장바구니에 담긴 상품의 수량을 변경합니다. (+/- 버튼)
-    - destroy: 장바구니에서 특정 항목을 제거합니다.
-    """
-
     serializer_class = CartItemSerializer
     permission_classes = [IsAuthenticated]
 
@@ -29,7 +20,10 @@ class CartItemViewSet(viewsets.ModelViewSet):
         return {"request": self.request}
 
     def list(self, request, *args, **kwargs):
-        """장바구니 목록과 총합계 금액을 함께 반환하도록 커스터마이징합니다."""
+        """
+        사용자의 장바구니에 담긴 모든 항목과 총액을 조회합니다.
+        GET /cart/items/
+        """
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
 
@@ -43,3 +37,50 @@ class CartItemViewSet(viewsets.ModelViewSet):
         }
 
         return Response(data)
+
+    def create(self, request, *args, **kwargs):
+        """
+        장바구니에 새로운 상품을 추가합니다.
+        POST /cart/items/
+        """
+        return super().create(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        특정 장바구니 항목의 상세 정보를 조회합니다.
+        GET /cart/items/{pk}/
+        """
+        return super().retrieve(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        """
+        장바구니에 담긴 상품의 수량을 변경합니다.
+        수량이 0 이하로 들어오면 항목을 삭제합니다.
+        PUT /cart/items/{pk}/
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        quantity = serializer.validated_data.get("quantity", instance.quantity)
+
+        if quantity <= 0:
+            self.perform_destroy(instance)  # Use perform_destroy to ensure proper deletion
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        장바구니에 담긴 상품의 수량을 부분적으로 변경합니다.
+        PATCH /cart/items/{pk}/
+        """
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        장바구니에서 특정 항목을 제거합니다.
+        DELETE /cart/items/{pk}/
+        """
+        return super().destroy(request, *args, **kwargs)

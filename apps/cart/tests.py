@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -31,7 +33,7 @@ class CartItemViewSetTest(APITestCase):
         cls.brewery = Brewery.objects.create(name="테스트 양조장")
 
         # GIVEN: 1개의 단일 술(Drink) 상품
-        cls.drink = Drink.objects.create(name="테스트 막걸리", alcohol_content=6.0, volume_ml=750)
+        cls.drink = Drink.objects.create(name="테스트 막걸리", brewery=cls.brewery, abv=Decimal("6.0"), volume_ml=750)
 
         # GIVEN: 1개의 기획 패키지(Package)
         cls.curated_package = Package.objects.create(name="한잔 추천 세트", type="Curated")
@@ -39,13 +41,11 @@ class CartItemViewSetTest(APITestCase):
         # GIVEN: 2개의 판매 상품(Product) - 하나는 단일 술, 하나는 패키지
         cls.product_drink = Product.objects.create(
             drink=cls.drink,
-            brewery=cls.brewery,
             price=10000,
             description="맛있는 테스트 막걸리",
         )
         cls.product_package = Product.objects.create(
             package=cls.curated_package,
-            brewery=cls.brewery,
             price=25000,
             description="한잔이 추천하는 스페셜 세트",
         )
@@ -129,10 +129,90 @@ class CartItemViewSetTest(APITestCase):
         # WHEN: 수량 변경 API(PATCH)를 호출
         response = self.client.patch(url, data, format="json")
 
-        # THEN: 응답은 성공(200)하지만 내용은 비어있고, DB에서 항목은 삭제됨
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # THEN: 응답은 성공(204 No Content)하며 내용은 비어있고, DB에서 항목은 삭제됨
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(response.data)  # Serializer의 update에서 None을 반환
         self.assertFalse(CartItem.objects.filter(pk=cart_item.pk).exists())
+
+    def test_retrieve_cart_item_success(self):
+        """
+        [성공] 특정 장바구니 항목을 성공적으로 조회하는 경우
+        """
+        # GIVEN: 장바구니에 상품이 담겨 있음
+        cart_item = CartItem.objects.create(user=self.user, product=self.product_drink, quantity=1)
+        url = reverse("cart-item-detail", kwargs={"pk": cart_item.pk})
+
+        # WHEN: 특정 장바구니 항목 조회 API를 호출
+        response = self.client.get(url)
+
+        # THEN: 200 코드와 함께 항목 정보를 반환
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], cart_item.pk)
+        self.assertEqual(response.data["quantity"], 1)
+
+    def test_retrieve_non_existent_cart_item_fails(self):
+        """
+        [실패] 존재하지 않는 장바구니 항목을 조회하는 경우
+        """
+        # GIVEN: 존재하지 않는 장바구니 항목 ID
+        non_existent_pk = "99999999-9999-9999-9999-999999999999"  # UUID 형식에 맞게 임의의 값 설정
+        url = reverse("cart-item-detail", kwargs={"pk": non_existent_pk})
+
+        # WHEN: 존재하지 않는 장바구니 항목 조회 API를 호출
+        response = self.client.get(url)
+
+        # THEN: 404 Not Found 코드를 반환
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_cart_item_success(self):
+        """
+        [성공] 특정 장바구니 항목을 성공적으로 삭제하는 경우
+        """
+        # GIVEN: 장바구니에 삭제할 상품이 존재함
+        cart_item = CartItem.objects.create(user=self.user, product=self.product_drink, quantity=1)
+        url = reverse("cart-item-detail", kwargs={"pk": cart_item.pk})
+
+        # WHEN: 특정 장바구니 항목 삭제 API를 호출
+        response = self.client.delete(url)
+
+        # THEN: 204 No Content 코드를 반환하고 DB에서 항목이 삭제됨
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(CartItem.objects.filter(pk=cart_item.pk).exists())
+
+    def test_delete_non_existent_cart_item_fails(self):
+        """
+        [실패] 존재하지 않는 장바구니 항목을 삭제하는 경우
+        """
+        # GIVEN: 존재하지 않는 장바구니 항목 ID
+        non_existent_pk = "99999999-9999-9999-9999-999999999999"
+        url = reverse("cart-item-detail", kwargs={"pk": non_existent_pk})
+
+        # WHEN: 존재하지 않는 장바구니 항목 삭제 API를 호출
+        response = self.client.delete(url)
+
+        # THEN: 404 Not Found 코드를 반환
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_add_existing_product_to_cart_updates_quantity(self):
+        """
+        [성공] 장바구니에 이미 있는 상품을 추가할 때 수량이 업데이트되는 경우
+        """
+        # GIVEN: 장바구니에 이미 상품이 1개 담겨 있음
+        CartItem.objects.create(user=self.user, product=self.product_drink, quantity=1)
+        url = reverse("cart-item-list")
+        data = {
+            "product_id": str(self.product_drink.id),
+            "quantity": 2,  # 기존 1개에 2개를 더 추가
+        }
+
+        # WHEN: 동일 상품을 추가하는 API를 호출
+        response = self.client.post(url, data, format="json")
+
+        # THEN: 201 Created 코드를 반환하고 수량이 3으로 업데이트됨
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        cart_item = CartItem.objects.get(user=self.user, product=self.product_drink)
+        self.assertEqual(cart_item.quantity, 3)  # 1 (기존) + 2 (추가) = 3
+        self.assertEqual(response.data["quantity"], 3)
 
     def test_user_cannot_access_others_cart(self):
         """
