@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+from decimal import Decimal
 
 from apps.cart.models import CartItem
 from apps.orders.models import Order
@@ -22,11 +23,11 @@ class OrderFromCartAPITest(APITestCase):
         # Drink 객체 생성
         self.drink1 = Drink.objects.create(
             name="Test Drink 1", brewery=self.brewery, ingredients="Ingredients 1",
-            alcohol_type=Drink.AlcoholType.MAKGEOLLI, alcohol_content=6.0, volume_ml=750
+            alcohol_type=Drink.AlcoholType.MAKGEOLLI, abv=Decimal('6.0'), volume_ml=750
         )
         self.drink2 = Drink.objects.create(
             name="Test Drink 2", brewery=self.brewery, ingredients="Ingredients 2",
-            alcohol_type=Drink.AlcoholType.SOJU, alcohol_content=19.0, volume_ml=360
+            alcohol_type=Drink.AlcoholType.SOJU, abv=Decimal('19.0'), volume_ml=360
         )
 
         # Product 객체 생성 (Drink와 연결)
