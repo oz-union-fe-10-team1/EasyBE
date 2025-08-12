@@ -1,9 +1,19 @@
+from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
 
 from .models import PreferenceTestResult
 from .services import TasteTestService
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "테스트 답변 예시",
+            value={"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}},
+            description="6개 질문에 대한 A 또는 B 답변",
+        )
+    ]
+)
 class TasteTestAnswersSerializer(serializers.Serializer):
     """테스트 답변 제출용 시리얼라이저"""
 
