@@ -17,6 +17,8 @@ class NaverLoginView(APIView):
     POST /api/v1/auth/login/naver/
     """
 
+    serializer_class = NaverLoginSerializer
+
     def post(self, request):
         # 0. 요청 데이터 검증
         serializer = NaverLoginSerializer(data=request.data)
