@@ -9,6 +9,7 @@ click==8.2.1
 coverage==7.9.2
 decorator==5.2.1
 django==5.2.4
+django-cors-headers==4.7.0
 django-debug-toolbar==6.0.0
 django-extensions==4.1
 django-filter==25.1
