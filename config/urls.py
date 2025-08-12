@@ -29,7 +29,6 @@ urlpatterns = [
     path("api/v1/auth/", include("apps.users.urls")),
     # API URL 패턴
     path("api/", include(("apps.products.urls", "products"), namespace="api")),
-
     path("api/v1/taste-test/", include("apps.taste_test.urls")),
     path("api/v1/cart/", include("apps.cart.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
