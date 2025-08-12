@@ -1,117 +1,77 @@
-# from collections import defaultdict
-#
-# from rest_framework import serializers
-#
-# from apps.cart.models import Cart, CartItem
-# from apps.products.models import Product
-#
-#
-# class ProductSerializer(serializers.ModelSerializer):
-#     main_image_url = serializers.ReadOnlyField()
-#
-#     class Meta:
-#         model = Product
-#         fields = ["id", "name", "price", "main_image_url"]
-#
-#
-# class CartItemSerializer(serializers.ModelSerializer):
-#     product = ProductSerializer(read_only=True)
-#     product_id = serializers.UUIDField(write_only=True)
-#
-#     class Meta:
-#         model = CartItem
-#         fields = ["id", "product", "product_id", "quantity", "subtotal"]
-#         read_only_fields = ["subtotal"]
-#
-#     def create(self, validated_data):
-#         product_id = validated_data.pop("product_id")
-#         quantity = validated_data.get("quantity", 1)
-#         cart = validated_data.get("cart")
-#
-#         try:
-#             product = Product.objects.get(id=product_id)
-#         except Product.DoesNotExist:
-#             raise serializers.ValidationError("Product not found.")
-#
-#         # 단일 상품(package_group=None)에 대해서만 get_or_create 적용
-#         cart_item, created = CartItem.objects.get_or_create(
-#             cart=cart, product=product, package_group=None, defaults={"quantity": quantity}
-#         )
-#
-#         if not created:
-#             cart_item.quantity += quantity
-#             cart_item.save()
-#
-#         return cart_item
-#
-#     def update(self, instance, validated_data):
-#         instance.quantity = validated_data.get("quantity", instance.quantity)
-#         instance.save()
-#         return instance
-#
-#
-# class PackageItemSerializer(serializers.ModelSerializer):
-#     """패키지에 속한 개별 상품을 위한 시리얼라이저"""
-#
-#     product = ProductSerializer(read_only=True)
-#
-#     class Meta:
-#         model = CartItem
-#         fields = ["id", "product", "quantity", "subtotal"]
-#
-#
-# class CartPackageSerializer(serializers.Serializer):
-#     """패키지 그룹을 위한 시리얼라이저"""
-#
-#     package_group_id = serializers.UUIDField()
-#     items = PackageItemSerializer(many=True)
-#     package_price = serializers.SerializerMethodField()  # 패키지 총 가격
-#
-#     def get_package_price(self, obj):
-#         # 패키지 가격 정책은 여기서 정의 (예: 각 상품 가격의 합)
-#         return sum(item.subtotal for item in obj["items"])
-#
-#
-# class CartSerializer(serializers.ModelSerializer):
-#     # items 필드는 더 이상 직접 사용하지 않고, to_representation에서 동적으로 구성
-#     total_price = serializers.DecimalField(max_digits=10, decimal_places=0, read_only=True)
-#     final_total = serializers.SerializerMethodField()
-#
-#     # 응답에 포함될 새로운 필드
-#     single_items = serializers.SerializerMethodField()
-#     packages = serializers.SerializerMethodField()
-#
-#     class Meta:
-#         model = Cart
-#         fields = [
-#             "id",
-#             "user",
-#             "single_items",  # 단일 상품 목록
-#             "packages",  # 패키지 목록
-#             "total_price",
-#             "final_total",
-#             "created_at",
-#             "updated_at",
-#         ]
-#         read_only_fields = ["user", "created_at", "updated_at"]
-#
-#     def get_final_total(self, obj):
-#         return obj.total_price
-#
-#     def get_single_items(self, obj):
-#         # package_group이 없는 아이템만 필터링
-#         single_items = obj.items.filter(package_group__isnull=True)
-#         return CartItemSerializer(single_items, many=True).data
-#
-#     def get_packages(self, obj):
-#         # package_group이 있는 아이템들을 그룹화
-#         packages = defaultdict(list)
-#         packaged_items = obj.items.filter(package_group__isnull=False)
-#         for item in packaged_items:
-#             packages[item.package_group].append(item)
-#
-#         # 직렬화
-#         result = []
-#         for group_id, items in packages.items():
-#             result.append({"package_group_id": group_id, "items": items})
-#         return CartPackageSerializer(result, many=True).data
+from rest_framework import serializers
+
+from apps.products.models import Product, ProductImage
+
+from .models import CartItem
+
+
+class _CartProductSerializer(serializers.ModelSerializer):
+    """
+    장바구니 내부에 표시될 상품 정보를 위한 내부 시리얼라이저.
+    Product가 drink인지 package인지에 따라 이름과 이미지를 가져옵니다.
+    """
+
+    name = serializers.CharField(source="product.name", read_only=True)
+    main_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "price", "main_image"]
+
+    def get_main_image(self, obj):
+        """상품의 메인 이미지를 반환합니다."""
+        try:
+            image = ProductImage.objects.filter(product=obj, is_main=True).first()
+            return image.image_url if image else None
+        except Exception:
+            return None
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    """
+    장바구니 항목 CRUD를 위한 메인 시리얼라이저
+    """
+
+    product = _CartProductSerializer(read_only=True)
+    product_id = serializers.CharField(write_only=True)
+    subtotal = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CartItem
+        fields = ["id", "product", "product_id", "quantity", "subtotal"]
+        read_only_fields = ["id", "product", "subtotal"]
+
+    def get_subtotal(self, obj):
+        """항목별 소계 (가격 * 수량)를 계산합니다."""
+        return obj.product.price * obj.quantity
+
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        # 이미 장바구니에 있는 상품이면 수량만 더해줌
+        product_id = validated_data.get("product_id")
+        product = Product.objects.get(id=product_id)
+        quantity = validated_data.get("quantity")
+        cart_item, created = CartItem.objects.get_or_create(
+            user=validated_data["user"],
+            product=product,
+            defaults={"quantity": quantity},
+        )
+        if not created:
+            cart_item.quantity += quantity
+            cart_item.save()
+        return cart_item
+
+    def update(self, instance, validated_data):
+        """
+        수량 업데이트 로직을 커스터마이징합니다.
+        수량이 0 이하로 들어오면 항목을 삭제하고, 그렇지 않으면 수량을 업데이트합니다.
+        """
+        quantity = validated_data.get("quantity", instance.quantity)
+
+        if quantity <= 0:
+            instance.delete()
+            return None  # 삭제된 경우 아무것도 반환하지 않음
+        else:
+            instance.quantity = quantity
+            instance.save()
+            return instance

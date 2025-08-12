@@ -1,11 +1,11 @@
-# from django.urls import include, path
-# from rest_framework.routers import DefaultRouter
-#
-# from apps.cart.views import CartViewSet
-#
-# router = DefaultRouter()
-# router.register(r"", CartViewSet, basename="cart")
-#
-# urlpatterns = [
-#     path("", include(router.urls)),
-# ]
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from .views import CartItemViewSet
+
+router = DefaultRouter()
+router.register(r"", CartItemViewSet, basename="cart-item")
+
+urlpatterns = [
+    path("", include(router.urls)),
+]
