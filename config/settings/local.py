@@ -27,18 +27,18 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # 개발환경용 추가 설정
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": "INFO",
-        },
-    },
-}
+# LOGGING = {
+#     "version": 1,
+#     "disable_existing_loggers": False,
+#     "handlers": {
+#         "console": {
+#             "class": "logging.StreamHandler",
+#         },
+#     },
+#     "loggers": {
+#         "django": {
+#             "handlers": ["console"],
+#             "level": "INFO",
+#         },
+#     },
+# }

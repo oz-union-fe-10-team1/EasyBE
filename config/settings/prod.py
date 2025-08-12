@@ -55,27 +55,27 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
-# 로깅 설정 (프로덕션)
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": "/var/log/django/django.log",
-        },
-        "console": {
-            "class": "logging.StreamHandler",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["file", "console"],
-            "level": "WARNING",
-        },
-        "apps": {
-            "handlers": ["file", "console"],
-            "level": "INFO",
-        },
-    },
-}
+# 로깅 설정 (프로덕션) - 임시 주석 처리
+# LOGGING = {
+#     "version": 1,
+#     "disable_existing_loggers": False,
+#     "handlers": {
+#         "file": {
+#             "class": "logging.FileHandler",
+#             "filename": "/var/log/django/django.log",
+#         },
+#         "console": {
+#             "class": "logging.StreamHandler",
+#         },
+#     },
+#     "loggers": {
+#         "django": {
+#             "handlers": ["file", "console"],
+#             "level": "WARNING",
+#         },
+#         "apps": {
+#             "handlers": ["file", "console"],
+#             "level": "INFO",
+#         },
+#     },
+# }
