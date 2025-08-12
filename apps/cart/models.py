@@ -2,6 +2,8 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from apps.stores.models import Store
+
 
 class CartItem(models.Model):
     """장바구니 아이템"""
@@ -9,6 +11,15 @@ class CartItem(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cart_items")
     product = models.ForeignKey("products.Product", on_delete=models.CASCADE, related_name="cart_items")
     quantity = models.PositiveIntegerField(default=1, help_text="수량")
+    pickup_store = models.ForeignKey(
+        Store,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="cart_items_for_pickup",
+        help_text="픽업 매장",
+    )
+    pickup_date = models.DateField(null=True, blank=True, help_text="픽업 날짜")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

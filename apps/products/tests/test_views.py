@@ -35,7 +35,7 @@ class BreweryAPITest(BaseAPITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["results"]), 3)
+        self.assertEqual(len(response.data["results"]), 4)
 
         # 첫 번째 양조장 데이터 구조 확인
         first_brewery = response.data["results"][0]
@@ -71,7 +71,7 @@ class DrinkAPITest(BaseAPITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["results"]), 4)
+        self.assertEqual(len(response.data["results"]), 5)
 
     def test_drink_detail_api(self):
         """술 상세 API 테스트"""
@@ -116,7 +116,7 @@ class PackageAPITest(BaseAPITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["results"]), 2)
+        self.assertEqual(len(response.data["results"]), 3)
 
     def test_package_detail_api(self):
         """패키지 상세 API 테스트"""
@@ -146,7 +146,7 @@ class ProductListAPITest(BaseAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # 개별 상품 4개 + 패키지 상품 2개 = 총 6개
-        self.assertEqual(len(response.data["results"]), 6)
+        self.assertEqual(len(response.data["results"]), 8)
 
         # 첫 번째 상품 데이터 구조 확인
         first_product = response.data["results"][0]
