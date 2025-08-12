@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from .models import PreferenceTestResult
 from .serializers import (
+    PreferenceTestResultProfileSerializer,
     PreferenceTestResultSerializer,
     TasteTestAnswersSerializer,
     TasteTestResultSerializer,
@@ -179,7 +180,7 @@ class UserProfileView(APIView):
 
     @extend_schema(
         summary="사용자 프로필",
-        description="로그인한 사용자의 기본 정보와 테스트 완료 여부를 조회합니다",
+        description="로그인한 사용자의 기본 정보와 테스트 완료 여부를 조회합니다. 테스트 완료시 상세 결과 포함 (답변 내역 제외).",
         responses={
             200: {
                 "description": "사용자 프로필",
@@ -188,8 +189,11 @@ class UserProfileView(APIView):
                     "has_test": True,
                     "result": {
                         "id": 1,
+                        "user_nickname": "사용자닉네임",
                         "prefer_taste": "SWEET_FRUIT",
                         "prefer_taste_display": "달콤과일파",
+                        "taste_description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!",
+                        "image_url": "images/types/sweet_fruit.png",
                         "created_at": "2024-01-01T00:00:00Z",
                     },
                 },
@@ -203,7 +207,7 @@ class UserProfileView(APIView):
         data = {"user": request.user.nickname, "has_test": has_test}
 
         if has_test:
-            serializer = PreferenceTestResultSerializer(request.user.preference_test_result)
+            serializer = PreferenceTestResultProfileSerializer(request.user.preference_test_result)
             data["result"] = serializer.data
 
         return Response(data, status=status.HTTP_200_OK)
