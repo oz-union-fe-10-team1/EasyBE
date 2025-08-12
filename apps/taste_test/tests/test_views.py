@@ -1,6 +1,6 @@
 # tests/test_views.py
 """
-API 뷰 테스트 (오류 수정)
+API 뷰 테스트 (최적화된 버전)
 """
 
 from django.contrib.auth import get_user_model
@@ -18,7 +18,6 @@ class TasteTestAPITest(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(nickname="testuser", email="test@example.com")
-        # Token 대신 force_authenticate 사용
         self.client.force_authenticate(user=self.user)
 
     def test_get_questions(self):
@@ -31,7 +30,7 @@ class TasteTestAPITest(APITestCase):
         self.assertIn("카페에", response.data[0]["question"])
 
     def test_submit_answers_success(self):
-        """답변 제출 성공 테스트 (이미지 정보 포함)"""
+        """답변 제출 성공 테스트"""
         url = reverse("taste_test:submit")
         data = {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "A"}}
 
@@ -49,54 +48,50 @@ class TasteTestAPITest(APITestCase):
         self.assertTrue(response.data["saved"])  # 로그인한 상태이므로 저장됨
 
     def test_submit_answers_without_auth(self):
-        """인증 없이 답변 제출 테스트 (AllowAny이므로 가능)"""
+        """인증 없이 답변 제출 테스트"""
         self.client.force_authenticate(user=None)  # 인증 해제
 
         url = reverse("taste_test:submit")
-        # 완전한 답변 데이터로 수정
         data = {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}}
 
         response = self.client.post(url, data, format="json")
 
-        # AllowAny 권한이므로 성공해야 함 (단, 저장은 안됨)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("type", response.data)
         self.assertIn("saved", response.data)
         self.assertFalse(response.data["saved"])  # 로그인 안했으므로 저장 안됨
 
-    def test_get_result_success(self):
-        """결과 조회 성공 테스트 (이미지 정보 포함)"""
-        # 먼저 테스트 결과 생성
-        PreferenceTestResult.objects.create(user=self.user, answers={"Q1": "A", "Q2": "B"}, prefer_taste="SWEET_FRUIT")
-
-        url = reverse("taste_test:result")
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["prefer_taste"], "SWEET_FRUIT")
-
-        # 이미지 정보 확인 (serializer에서 추가됨)
-        self.assertIn("image_url", response.data)
-        self.assertIn("type_info", response.data)
-
-    def test_get_result_not_found(self):
-        """결과 없을 때 테스트"""
-        url = reverse("taste_test:result")
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
     def test_get_profile_with_result(self):
-        """프로필 조회 (테스트 결과 있음)"""
-        PreferenceTestResult.objects.create(user=self.user, answers={"Q1": "A"}, prefer_taste="SWEET_FRUIT")
+        """프로필 조회 (테스트 결과 있음) - 완전한 결과 포함"""
+        PreferenceTestResult.objects.create(
+            user=self.user,
+            answers={"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"},
+            prefer_taste="SWEET_FRUIT",
+        )
 
         url = reverse("taste_test:profile")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # views.py에서 has_test로 되어있음 (has_test_result가 아님)
         self.assertTrue(response.data["has_test"])
         self.assertIn("result", response.data)
+
+        # 완전한 테스트 결과 확인
+        result = response.data["result"]
+        self.assertEqual(result["prefer_taste"], "SWEET_FRUIT")
+        self.assertIn("answers", result)  # 답변 내역 포함
+        self.assertIn("taste_description", result)
+        self.assertIn("image_url", result)
+        self.assertIn("type_info", result)
+
+    def test_get_profile_without_result(self):
+        """프로필 조회 (테스트 결과 없음)"""
+        url = reverse("taste_test:profile")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["has_test"])
+        self.assertNotIn("result", response.data)
 
     def test_get_types(self):
         """취향 유형 목록 테스트"""
@@ -105,12 +100,14 @@ class TasteTestAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["total"], 9)
-        # views.py에서 types로 되어있음 (taste_types가 아님)
         self.assertEqual(len(response.data["types"]), 9)
 
         # 각 타입에 이미지 정보가 포함되어 있는지 확인
         for taste_type in response.data["types"]:
             self.assertIn("image_url", taste_type)
+            self.assertIn("name", taste_type)
+            self.assertIn("description", taste_type)
+            self.assertIn("characteristics", taste_type)
 
     def test_retake_success(self):
         """재테스트 성공"""
@@ -129,17 +126,47 @@ class TasteTestAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("type", response.data)
         self.assertIn("info", response.data)
+        self.assertIn("saved", response.data)
+        self.assertTrue(response.data["saved"])
+
         # 이미지 정보 확인
         self.assertIn("image_url", response.data["info"])
 
     def test_retake_no_existing_result(self):
         """재테스트 - 기존 결과 없음"""
-        # 기존 결과를 삭제해서 없는 상태로 만들기
-        PreferenceTestResult.objects.filter(user=self.user).delete()
-
         url = reverse("taste_test:retake")
         data = {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}}
 
         response = self.client.put(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("message", response.data)
+
+    def test_submit_invalid_answers(self):
+        """잘못된 답변 제출 테스트"""
+        url = reverse("taste_test:submit")
+
+        # 부족한 답변
+        data = {"answers": {"Q1": "A", "Q2": "B"}}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 잘못된 선택지
+        data = {"answers": {"Q1": "C", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_profile_unauthenticated(self):
+        """인증 없이 프로필 조회 시 401 에러"""
+        self.client.force_authenticate(user=None)
+        url = reverse("taste_test:profile")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_retake_unauthenticated(self):
+        """인증 없이 재테스트 시 401 에러"""
+        self.client.force_authenticate(user=None)
+        url = reverse("taste_test:retake")
+        data = {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}}
+        response = self.client.put(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

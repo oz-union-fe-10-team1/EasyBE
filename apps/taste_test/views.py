@@ -6,11 +6,9 @@ from rest_framework.views import APIView
 
 from .models import PreferenceTestResult
 from .serializers import (
-    PreferenceTestResultProfileSerializer,
     PreferenceTestResultSerializer,
     TasteTestAnswersSerializer,
     TasteTestResultSerializer,
-    TasteTypeInfoSerializer,
 )
 from .services import TasteTestData, TasteTestService
 
@@ -189,11 +187,15 @@ class UserProfileView(APIView):
                     "has_test": True,
                     "result": {
                         "id": 1,
-                        "user_nickname": "사용자닉네임",
+                        "answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"},
                         "prefer_taste": "SWEET_FRUIT",
                         "prefer_taste_display": "달콤과일파",
                         "taste_description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!",
                         "image_url": "images/types/sweet_fruit.png",
+                        "type_info": {
+                            "name": "달콤과일파",
+                            "characteristics": ["달콤함", "과일향", "로맨틱", "부드러움"],
+                        },
                         "created_at": "2024-01-01T00:00:00Z",
                     },
                 },
@@ -207,7 +209,7 @@ class UserProfileView(APIView):
         data = {"user": request.user.nickname, "has_test": has_test}
 
         if has_test:
-            serializer = PreferenceTestResultProfileSerializer(request.user.preference_test_result)
+            serializer = PreferenceTestResultSerializer(request.user.preference_test_result)
             data["result"] = serializer.data
 
         return Response(data, status=status.HTTP_200_OK)
