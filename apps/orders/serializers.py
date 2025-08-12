@@ -17,7 +17,7 @@ class SimpleProductSerializer(serializers.ModelSerializer):
     def get_main_image_url(self, obj):
         # Product 모델에 main_image_url property가 있다고 가정
         # 없다면, obj.images.filter(is_main=True).first().image_url 등으로 구현 필요
-        if hasattr(obj, 'main_image_url'):
+        if hasattr(obj, "main_image_url"):
             return obj.main_image_url
         # ProductImage 모델을 직접 참조해야 할 경우
         main_image = obj.images.filter(is_main=True).first()
@@ -68,3 +68,35 @@ class OrderSerializer(serializers.ModelSerializer):
             "items",
         ]
         read_only_fields = fields
+
+
+class FlatOrderItemSerializer(serializers.ModelSerializer):
+    product = SimpleProductSerializer(read_only=True)
+    pickup_store = StoreSerializer(read_only=True)
+    feedback_id = serializers.SerializerMethodField()
+    order_date = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderItem
+        fields = [
+            "id",
+            "order_date",
+            "product",
+            "quantity",
+            "price",
+            "pickup_store",
+            "pickup_day",
+            "pickup_status",
+            "is_gift",
+            "gift_message",
+            "feedback_id",
+        ]
+        read_only_fields = fields
+
+    def get_feedback_id(self, obj):
+        if hasattr(obj, "feedback") and obj.feedback:
+            return obj.feedback.id
+        return None
+
+    def get_order_date(self, obj):
+        return obj.order.created_at.date()
