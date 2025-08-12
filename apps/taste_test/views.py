@@ -6,7 +6,6 @@ from rest_framework.views import APIView
 
 from .models import PreferenceTestResult
 from .serializers import (
-    PreferenceTestResultSerializer,
     TasteTestAnswersSerializer,
     TasteTestResultSerializer,
 )
@@ -106,29 +105,6 @@ class TasteTestSubmitView(APIView):
         return Response(result, status=status.HTTP_201_CREATED)
 
 
-class TasteTestResultView(APIView):
-    """사용자 테스트 결과 조회"""
-
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(
-        summary="내 테스트 결과 조회",
-        description="로그인한 사용자의 저장된 취향 테스트 결과를 조회합니다",
-        responses={
-            200: PreferenceTestResultSerializer,
-            404: {"description": "테스트 결과 없음", "example": {"message": "아직 테스트를 완료하지 않았습니다."}},
-        },
-        tags=["사용자"],
-    )
-    def get(self, request):
-        try:
-            result = PreferenceTestResult.objects.select_related("user").get(user=request.user)
-            serializer = PreferenceTestResultSerializer(result)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except PreferenceTestResult.DoesNotExist:
-            return Response({"message": "아직 테스트를 완료하지 않았습니다."}, status=status.HTTP_404_NOT_FOUND)
-
-
 class TasteTestRetakeView(APIView):
     """테스트 재응시"""
 
@@ -178,26 +154,19 @@ class UserProfileView(APIView):
 
     @extend_schema(
         summary="사용자 프로필",
-        description="로그인한 사용자의 기본 정보와 테스트 완료 여부를 조회합니다. 테스트 완료시 상세 결과 포함 (답변 내역 제외).",
+        description="로그인한 사용자의 기본 정보와 테스트 완료 여부를 조회합니다. 테스트 완료시 기본 결과 정보 포함.",
         responses={
             200: {
                 "description": "사용자 프로필",
                 "example": {
                     "user": "사용자닉네임",
                     "has_test": True,
-                    "result": {
-                        "id": 1,
-                        "answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"},
-                        "prefer_taste": "SWEET_FRUIT",
-                        "prefer_taste_display": "달콤과일파",
-                        "taste_description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!",
-                        "image_url": "images/types/sweet_fruit.png",
-                        "type_info": {
-                            "name": "달콤과일파",
-                            "characteristics": ["달콤함", "과일향", "로맨틱", "부드러움"],
-                        },
-                        "created_at": "2024-01-01T00:00:00Z",
-                    },
+                    "id": 1,
+                    "prefer_taste": "SWEET_FRUIT",
+                    "prefer_taste_display": "달콤과일파",
+                    "taste_description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!",
+                    "image_url": "images/types/sweet_fruit.png",
+                    "created_at": "2024-01-01T00:00:00Z",
                 },
             }
         },
@@ -209,8 +178,17 @@ class UserProfileView(APIView):
         data = {"user": request.user.nickname, "has_test": has_test}
 
         if has_test:
-            serializer = PreferenceTestResultSerializer(request.user.preference_test_result)
-            data["result"] = serializer.data
+            test_result = request.user.preference_test_result
+            data.update(
+                {
+                    "id": test_result.id,
+                    "prefer_taste": test_result.prefer_taste,
+                    "prefer_taste_display": test_result.get_prefer_taste_display(),
+                    "taste_description": test_result.get_taste_description(),
+                    "image_url": TasteTestService.get_image_url_by_enum(test_result.prefer_taste),
+                    "created_at": test_result.created_at,
+                }
+            )
 
         return Response(data, status=status.HTTP_200_OK)
 

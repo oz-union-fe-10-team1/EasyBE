@@ -62,7 +62,7 @@ class TasteTestAPITest(APITestCase):
         self.assertFalse(response.data["saved"])  # 로그인 안했으므로 저장 안됨
 
     def test_get_profile_with_result(self):
-        """프로필 조회 (테스트 결과 있음) - 완전한 결과 포함"""
+        """프로필 조회 (테스트 결과 있음) - 평평한 구조"""
         PreferenceTestResult.objects.create(
             user=self.user,
             answers={"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"},
@@ -74,15 +74,14 @@ class TasteTestAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["has_test"])
-        self.assertIn("result", response.data)
 
-        # 완전한 테스트 결과 확인
-        result = response.data["result"]
-        self.assertEqual(result["prefer_taste"], "SWEET_FRUIT")
-        self.assertIn("answers", result)  # 답변 내역 포함
-        self.assertIn("taste_description", result)
-        self.assertIn("image_url", result)
-        self.assertIn("type_info", result)
+        # 평평한 구조로 변경된 응답 확인
+        self.assertEqual(response.data["prefer_taste"], "SWEET_FRUIT")
+        self.assertIn("id", response.data)
+        self.assertIn("taste_description", response.data)
+        self.assertIn("image_url", response.data)
+        self.assertIn("prefer_taste_display", response.data)
+        self.assertIn("created_at", response.data)
 
     def test_get_profile_without_result(self):
         """프로필 조회 (테스트 결과 없음)"""
@@ -91,7 +90,11 @@ class TasteTestAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data["has_test"])
-        self.assertNotIn("result", response.data)
+
+        # 테스트 결과 관련 필드들이 없어야 함
+        self.assertNotIn("id", response.data)
+        self.assertNotIn("prefer_taste", response.data)
+        self.assertNotIn("taste_description", response.data)
 
     def test_get_types(self):
         """취향 유형 목록 테스트"""
