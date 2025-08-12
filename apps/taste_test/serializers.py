@@ -47,7 +47,6 @@ class TasteTestAnswersSerializer(serializers.Serializer):
 class PreferenceTestResultSerializer(serializers.ModelSerializer):
     """테스트 결과 조회용 시리얼라이저"""
 
-    user_nickname = serializers.CharField(source="user.nickname", read_only=True)
     prefer_taste_display = serializers.CharField(source="get_prefer_taste_display", read_only=True)
     taste_description = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
@@ -57,7 +56,6 @@ class PreferenceTestResultSerializer(serializers.ModelSerializer):
         model = PreferenceTestResult
         fields = [
             "id",
-            "user_nickname",
             "answers",
             "prefer_taste",
             "prefer_taste_display",
