@@ -18,6 +18,8 @@ class GoogleLoginView(APIView):
     POST /api/v1/auth/login/google/
     """
 
+    serializer_class = GoogleLoginSerializer
+
     def post(self, request: Request) -> Response:
         # 0. 요청 데이터 검증
         serializer = GoogleLoginSerializer(data=request.data)

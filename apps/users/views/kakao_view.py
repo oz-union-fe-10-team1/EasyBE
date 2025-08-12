@@ -16,6 +16,8 @@ class KakaoLoginView(APIView):
     POST /api/v1/auth/login/kakao/
     """
 
+    serializer_class = KakaoLoginSerializer
+
     def post(self, request):
         # 0. 요청 데이터 검증
         serializer = KakaoLoginSerializer(data=request.data)

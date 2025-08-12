@@ -16,6 +16,8 @@ class OAuthStateView(APIView):
     POST /api/v1/auth/state
     """
 
+    serializer_class = StateSerializer
+
     def post(self, request):
         serializer = StateSerializer(data=request.data)
 
