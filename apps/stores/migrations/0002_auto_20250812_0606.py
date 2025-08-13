@@ -3,101 +3,10 @@
 from django.db import migrations
 
 
-def create_initial_cu_stores(apps, schema_editor):
-    Store = apps.get_model("stores", "Store")
-
-    stores_data = [
-        {
-            "name": "CU 강남점",
-            "address": "서울특별시 강남구 테헤란로 123",
-            "contact": "02-1234-5678",
-            "opening_days": "월-일",
-            "opening_hours": {
-                "monday": "08:00-22:00",
-                "tuesday": "08:00-22:00",
-                "wednesday": "08:00-22:00",
-                "thursday": "08:00-22:00",
-                "friday": "08:00-23:00",
-                "saturday": "09:00-23:00",
-                "sunday": "09:00-22:00",
-            },
-            "closed_days": [],
-            "image": "https://example.com/cu_gangnam.jpg",
-            "latitude": 37.5000,
-            "longitude": 127.0300,
-            "status": "ACTIVE",
-        },
-        {
-            "name": "CU 홍대점",
-            "address": "서울특별시 마포구 홍익로 123",
-            "contact": "02-9876-5432",
-            "opening_days": "월-일",
-            "opening_hours": {
-                "monday": "09:00-23:00",
-                "tuesday": "09:00-23:00",
-                "wednesday": "09:00-23:00",
-                "thursday": "09:00-23:00",
-                "friday": "09:00-24:00",
-                "saturday": "10:00-24:00",
-                "sunday": "10:00-23:00",
-            },
-            "closed_days": [],
-            "image": "https://example.com/cu_hongdae.jpg",
-            "latitude": 37.5500,
-            "longitude": 126.9200,
-            "status": "ACTIVE",
-        },
-        {
-            "name": "CU 이태원점",
-            "address": "서울특별시 용산구 이태원로 123",
-            "contact": "02-5678-1234",
-            "opening_days": "월-일",
-            "opening_hours": {
-                "monday": "07:00-24:00",
-                "tuesday": "07:00-24:00",
-                "wednesday": "07:00-24:00",
-                "thursday": "07:00-24:00",
-                "friday": "07:00-01:00",
-                "saturday": "08:00-01:00",
-                "sunday": "08:00-24:00",
-            },
-            "closed_days": [],
-            "image": "https://example.com/cu_itaewon.jpg",
-            "latitude": 37.5300,
-            "longitude": 126.9900,
-            "status": "ACTIVE",
-        },
-        {
-            "name": "CU 종로점",
-            "address": "서울특별시 종로구 종로 123",
-            "contact": "02-2345-6789",
-            "opening_days": "월-토",
-            "opening_hours": {
-                "monday": "08:00-21:00",
-                "tuesday": "08:00-21:00",
-                "wednesday": "08:00-21:00",
-                "thursday": "08:00-21:00",
-                "friday": "08:00-21:00",
-                "saturday": "09:00-20:00",
-            },
-            "closed_days": ["sunday"],
-            "image": "https://example.com/cu_jongno.jpg",
-            "latitude": 37.5700,
-            "longitude": 126.9800,
-            "status": "ACTIVE",
-        },
-    ]
-
-    for store_data in stores_data:
-        Store.objects.create(**store_data)
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
         ("stores", "0001_initial"),
     ]
 
-    operations = [
-        migrations.RunPython(create_initial_cu_stores),
-    ]
+    operations = []

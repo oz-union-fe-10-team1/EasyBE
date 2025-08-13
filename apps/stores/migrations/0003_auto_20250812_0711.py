@@ -3,20 +3,6 @@
 from django.db import migrations
 
 
-def populate_initial_product_stock(apps, schema_editor):
-    Store = apps.get_model("stores", "Store")
-    Product = apps.get_model("products", "Product")
-    ProductStock = apps.get_model("stores", "ProductStock")
-
-    stores = Store.objects.all()
-    products = Product.objects.all()
-
-    for store in stores:
-        for product in products:
-            # Create or update ProductStock for each product in each store
-            ProductStock.objects.update_or_create(store=store, product=product, defaults={"quantity": 10})
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -27,6 +13,4 @@ class Migration(migrations.Migration):
         ),  # Dependency on a product migration to ensure Product model exists
     ]
 
-    operations = [
-        migrations.RunPython(populate_initial_product_stock),
-    ]
+    operations = []
