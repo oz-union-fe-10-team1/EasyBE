@@ -38,8 +38,7 @@ class Store(models.Model):
     # 운영 시간 관련
     opening_days = models.CharField(max_length=255, null=True, blank=True, help_text="운영 요일 (예: 월-일)")
     opening_hours = models.JSONField(
-        null=True, blank=True, help_text="요일별 운영시간 (예: {'monday': '09:00-18:00', 'tuesday': '09:00-18:00'})"
-    )
+        null=True, blank=True, help_text="요일별 운영시간 (예: {'monday': '09:00-18:00', 'tuesday': '09:00-18:00'})")
     closed_days = models.JSONField(
         null=True,
         blank=True,
@@ -93,49 +92,20 @@ class Store(models.Model):
         self.save(update_fields=["status", "updated_at"])
 
 
-class ProductStock(models.Model):
-    """매장별 상품 재고"""
+class StoreLike(models.Model):
+    """매장 좋아요"""
 
-    product = models.ForeignKey("products.Product", on_delete=models.CASCADE, related_name="stocks")
-    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name="stocks")
-    quantity = models.PositiveIntegerField(default=0, help_text="재고 수량")
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="liked_stores")
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name="likes")
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "product_stocks"
-        unique_together = ("product", "store")  # 매장-상품 조합은 유일
+        db_table = "store_likes"
+        unique_together = ("user", "store")
         indexes = [
+            models.Index(fields=["user"]),
             models.Index(fields=["store"]),
-            models.Index(fields=["product"]),
-            models.Index(fields=["quantity"]),
         ]
 
     def __str__(self):
-        return f"{self.store.name} - {self.product.name}: {self.quantity}개"
-
-    @property
-    def is_in_stock(self):
-        """재고 있는지 확인"""
-        return self.quantity > 0
-
-    @property
-    def is_low_stock(self, threshold=5):
-        """재고 부족 상태인지 확인 (기본 5개 미만)"""
-        return 0 < self.quantity <= threshold
-
-    def add_stock(self, amount):
-        """재고 추가"""
-        self.quantity += amount
-        self.save(update_fields=["quantity"])
-
-    def reduce_stock(self, amount):
-        """재고 차감"""
-        if self.quantity >= amount:
-            self.quantity -= amount
-            self.save(update_fields=["quantity"])
-            return True
-        return False  # 재고 부족
-
-    def set_stock(self, amount):
-        """재고 수량 설정"""
-        self.quantity = amount
-        self.save(update_fields=["quantity"])
+        return f"{self.user.nickname} - {self.store.name}"

@@ -1,17 +1,11 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAdminUser
 
-from apps.stores.models import ProductStock, Store
-from apps.stores.serializers import ProductStockSerializer, StoreSerializer
+from apps.stores.models import Store
+from apps.stores.serializers import StoreSerializer
 
 
 class StoreViewSet(viewsets.ModelViewSet):
-    queryset = Store.objects.all()
+    queryset = Store.objects.all().order_by("-created_at")
     serializer_class = StoreSerializer
-    permission_classes = [IsAdminUser]
-
-
-class ProductStockViewSet(viewsets.ModelViewSet):
-    queryset = ProductStock.objects.all()
-    serializer_class = ProductStockSerializer
     permission_classes = [IsAdminUser]

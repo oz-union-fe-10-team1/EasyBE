@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.stores.models import ProductStock, Store
+from apps.stores.models import Store
 
 
 class StoreSerializer(serializers.ModelSerializer):
@@ -21,9 +21,3 @@ class StoreSerializer(serializers.ModelSerializer):
             "image",
             "status",
         ]
-
-
-class ProductStockSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProductStock
-        fields = ["id", "product", "store", "quantity"]
