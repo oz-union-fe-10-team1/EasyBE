@@ -31,6 +31,7 @@ urlpatterns = [
     path("api/", include(("apps.products.urls", "products"), namespace="api")),
     path("api/v1/taste-test/", include("apps.taste_test.urls")),
     path("api/v1/cart/", include("apps.cart.urls")),
+    path("api/", include(("apps.feedback.urls", "feedback"), namespace="feedback")),
     # swagger 및 redoc URL 패턴
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
