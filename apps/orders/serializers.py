@@ -39,8 +39,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "pickup_store",
             "pickup_day",
             "pickup_status",
-            "is_gift",
-            "gift_message",
             "feedback_id",
         ]
         read_only_fields = fields
@@ -87,8 +85,6 @@ class FlatOrderItemSerializer(serializers.ModelSerializer):
             "pickup_store",
             "pickup_day",
             "pickup_status",
-            "is_gift",
-            "gift_message",
             "feedback_id",
         ]
         read_only_fields = fields
