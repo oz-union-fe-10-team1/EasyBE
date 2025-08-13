@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User
+from .models import PreferTasteProfile, User
 
 
 class StateSerializer(serializers.Serializer):
@@ -45,3 +45,18 @@ class LoginResponseSerializer(serializers.Serializer):
     refresh_token = serializers.CharField()
     user = UserSerializer()
     auth_type = serializers.CharField(help_text="new_user, existing_social, linked_to_existing")
+
+
+class TasteProfileSerializer(serializers.ModelSerializer):
+    """취향 프로필 응답"""
+
+    taste_scores = serializers.SerializerMethodField()
+    description = serializers.CharField(source="analysis_description")
+
+    class Meta:
+        model = PreferTasteProfile
+        fields = ["id", "taste_scores", "description"]
+
+    def get_taste_scores(self, obj):
+        """맛 점수들을 딕셔너리로 반환"""
+        return obj.get_taste_scores_dict()
