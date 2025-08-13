@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -59,8 +60,8 @@ class OrderFromCartAPITest(APITestCase):
     def test_create_order_from_cart_success(self):
         """장바구니에서 주문 생성 성공 테스트"""
         # Given: 장바구니에 상품 추가
-        CartItem.objects.create(user=self.user, product=self.product1, quantity=2)
-        CartItem.objects.create(user=self.user, product=self.product2, quantity=1)
+        CartItem.objects.create(user=self.user, product=self.product1, quantity=2, pickup_store=self.store1, pickup_date=date.today())
+        CartItem.objects.create(user=self.user, product=self.product2, quantity=1, pickup_store=self.store1, pickup_date=date.today())
 
         # When: 주문 생성 API 호출
         response = self.client.post(self.create_order_url)
@@ -84,7 +85,7 @@ class OrderFromCartAPITest(APITestCase):
     def test_create_order_from_cart_fails_if_stock_insufficient(self):
         """재고 부족 시 주문 생성 실패 테스트"""
         # Given: 재고보다 많은 수량을 장바구니에 추가
-        CartItem.objects.create(user=self.user, product=self.product1, quantity=11)  # 재고는 10개
+        CartItem.objects.create(user=self.user, product=self.product1, quantity=11, pickup_store=self.store1, pickup_date=date.today())  # 재고는 10개
 
         # When: 주문 생성 API 호출
         response = self.client.post(self.create_order_url)
