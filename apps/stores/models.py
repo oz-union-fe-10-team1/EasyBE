@@ -38,7 +38,8 @@ class Store(models.Model):
     # 운영 시간 관련
     opening_days = models.CharField(max_length=255, null=True, blank=True, help_text="운영 요일 (예: 월-일)")
     opening_hours = models.JSONField(
-        null=True, blank=True, help_text="요일별 운영시간 (예: {'monday': '09:00-18:00', 'tuesday': '09:00-18:00'})")
+        null=True, blank=True, help_text="요일별 운영시간 (예: {'monday': '09:00-18:00', 'tuesday': '09:00-18:00'})"
+    )
     closed_days = models.JSONField(
         null=True,
         blank=True,
