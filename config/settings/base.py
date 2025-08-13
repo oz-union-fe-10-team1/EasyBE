@@ -49,6 +49,7 @@ THIRD_PARTY_APPS = [
 INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS + THIRD_PARTY_APPS
 
 MIDDLEWARE = [
+    "apps.common.middleware.CleanCORSMiddleware",
     "corsheaders.middleware.CorsMiddleware",  # CORS 미들웨어 추가 (최상단)
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.security.SecurityMiddleware",
