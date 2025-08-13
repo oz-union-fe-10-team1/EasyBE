@@ -63,5 +63,5 @@ class TasteProfileSerializer(serializers.ModelSerializer):
 
 
 class UserRestoreSerializer(serializers.Serializer):
-    email = serializers.CharField(source=User.email)
+    email = serializers.CharField()
     code = serializers.CharField()
