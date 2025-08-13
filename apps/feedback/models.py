@@ -1,6 +1,82 @@
+# apps/feedback/models.py
+
+from decimal import Decimal
+
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+
+# 태그 선택지 정의
+TASTE_TAG_CHOICES = [
+    ("과일향", "과일향"),
+    ("달콤한", "달콤한"),
+    ("산뜻한", "산뜻한"),
+    ("청량한", "청량한"),
+    ("고소한", "고소한"),
+    ("부드러운", "부드러운"),
+    ("톡쏘는", "톡쏘는"),
+    ("달링한", "달링한"),
+    ("독치한", "독치한"),
+    ("드라이", "드라이"),
+    ("시무한", "시무한"),
+    ("누룩향", "누룩향"),
+]
+
+
+class FeedbackQuerySet(models.QuerySet):
+    """피드백 QuerySet"""
+
+    def high_rated(self):
+        """높은 평점 리뷰들 (4점 이상)"""
+        return self.filter(rating__gte=4)
+
+    def with_taste_profile(self):
+        """취향 평가가 있는 리뷰들"""
+        return self.filter(
+            models.Q(sweetness__isnull=False) | models.Q(acidity__isnull=False) | models.Q(body__isnull=False)
+        )
+
+    def recent(self, days=7):
+        """최근 N일 내 리뷰들"""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        since = timezone.now() - timedelta(days=days)
+        return self.filter(created_at__gte=since)
+
+    def popular(self):
+        """인기 리뷰들 (조회수 기준)"""
+        return self.order_by("-view_count", "-created_at")
+
+    def personalized_for_user(self, user):
+        """사용자 취향과 비슷한 리뷰들"""
+        if hasattr(user, "taste_profile"):
+            # TODO: 취향 프로필 기반 필터링 로직
+            return self.high_rated().order_by("-created_at")
+        return self.high_rated().order_by("-created_at")
+
+
+class FeedbackManager(models.Manager):
+    """피드백 Manager"""
+
+    def get_queryset(self):
+        return FeedbackQuerySet(self.model, using=self._db)
+
+    def high_rated(self):
+        return self.get_queryset().high_rated()
+
+    def with_taste_profile(self):
+        return self.get_queryset().with_taste_profile()
+
+    def recent(self, days=7):
+        return self.get_queryset().recent(days)
+
+    def popular(self):
+        return self.get_queryset().popular()
+
+    def personalized_for_user(self, user):
+        return self.get_queryset().personalized_for_user(user)
 
 
 class Feedback(models.Model):
@@ -11,10 +87,62 @@ class Feedback(models.Model):
         "orders.OrderItem", on_delete=models.CASCADE, related_name="feedback", help_text="피드백을 작성한 주문 아이템"
     )
 
-    # 평점 및 신뢰도
+    # 종합 평점 (별점 1-5)
     rating = models.PositiveIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(5)], help_text="평점 (1-5점)"
+        validators=[MinValueValidator(1), MaxValueValidator(5)], help_text="종합 평점 (1-5점)"
     )
+
+    # 세부 취향 평가 (0.0-5.0)
+    sweetness = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
+        help_text="단맛 평가 (0.0-5.0)",
+    )
+    acidity = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
+        help_text="산미 평가 (0.0-5.0)",
+    )
+    body = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
+        help_text="바디감 평가 (0.0-5.0)",
+    )
+    carbonation = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
+        help_text="탄산감 평가 (0.0-5.0)",
+    )
+    bitterness = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
+        help_text="쓴맛 평가 (0.0-5.0)",
+    )
+    aroma = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
+        help_text="풍미 평가 (0.0-5.0)",
+    )
+
+    # 신뢰도
     confidence = models.PositiveIntegerField(
         default=50,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
@@ -24,14 +152,10 @@ class Feedback(models.Model):
     # 텍스트 피드백
     comment = models.TextField(null=True, blank=True, help_text="상세 피드백 내용")
 
-    # TODO: 이미지 피드백 (나중에 추가 가능) 태그, 구매인증등 검토 필요 피드백 커멘트 쪽도 한줄평 등 두가지가 필요할 수 있음.
     # 맛/느낌 태그들
     selected_tags = models.JSONField(
-        null=True, blank=True, help_text="선택한 맛/느낌 태그들 (예: ['달콤해요', '목넘김이 좋아요', '향이 좋아요'])"
+        null=True, blank=True, help_text="선택한 맛/느낌 태그들 (예: ['과일향', '달콤한', '부드러운'])"
     )
-
-    # 구매 인증
-    verified_purchase = models.BooleanField(default=True, help_text="구매 인증 여부")
 
     # 조회 관련
     view_count = models.PositiveIntegerField(default=0, help_text="피드백 조회수")
@@ -40,6 +164,9 @@ class Feedback(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Manager 설정
+    objects = FeedbackManager()
+
     class Meta:
         db_table = "feedbacks"
         indexes = [
@@ -47,8 +174,9 @@ class Feedback(models.Model):
             models.Index(fields=["rating"]),
             models.Index(fields=["order_item"]),
             models.Index(fields=["rating", "created_at"]),
-            models.Index(fields=["user", "rating"]),
-            models.Index(fields=["created_at", "view_count"]),
+            models.Index(fields=["sweetness", "acidity", "body"]),
+            models.Index(fields=["carbonation", "bitterness", "aroma"]),
+            models.Index(fields=["view_count"]),
         ]
 
     def __str__(self):
@@ -60,9 +188,12 @@ class Feedback(models.Model):
         return self.order_item.product
 
     @property
-    def drink(self):
-        """피드백 대상 술 (개별 상품인 경우만)"""
-        return self.order_item.product.drink if self.order_item.product.drink else None
+    def masked_username(self):
+        """사용자명 마스킹 처리 (abc**** 형태)"""
+        username = self.user.nickname or self.user.username
+        if len(username) <= 3:
+            return username[0] + "*" * (len(username) - 1)
+        return username[:3] + "*" * (len(username) - 3)
 
     def increment_view_count(self):
         """조회수 증가"""
@@ -72,23 +203,18 @@ class Feedback(models.Model):
         self.last_viewed_at = timezone.now()
         self.save(update_fields=["view_count", "last_viewed_at"])
 
-    def get_helpful_score(self):
-        """도움이 된 점수 (나중에 추가 가능)"""
-        # 추후 FeedbackHelpful 모델과 연계
-        return 0
-
-    def is_high_confidence(self):
-        """높은 신뢰도 피드백인지 확인 (80% 이상)"""
-        return self.confidence >= 80
-
-    def get_display_tags(self):
-        """태그들을 문자열로 반환"""
+    def clean(self):
+        """태그 검증"""
         if self.selected_tags:
-            return ", ".join(self.selected_tags)
-        return ""
+            valid_tags = [choice[0] for choice in TASTE_TAG_CHOICES]
+            invalid_tags = [tag for tag in self.selected_tags if tag not in valid_tags]
+            if invalid_tags:
+                from django.core.exceptions import ValidationError
+
+                raise ValidationError(f"허용되지 않은 태그: {invalid_tags}")
 
     def save(self, *args, **kwargs):
-        # 피드백 작성 시 상품의 리뷰 수 업데이트
+        """피드백 저장 시 상품 통계 업데이트"""
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
@@ -98,12 +224,8 @@ class Feedback(models.Model):
             product.review_count += 1
             product.save(update_fields=["review_count"])
 
-            # 사용자의 취향 프로필 업데이트 (개별 술 상품인 경우만)
-            if self.drink and hasattr(self.user, "taste_profile"):
-                self.user.taste_profile.update_from_review(self, self.drink)
-
     def delete(self, *args, **kwargs):
-        # 피드백 삭제 시 상품의 리뷰 수 감소
+        """피드백 삭제 시 상품의 리뷰 수 감소"""
         product = self.order_item.product
         product.review_count -= 1
         product.save(update_fields=["review_count"])
