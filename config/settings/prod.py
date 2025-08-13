@@ -39,7 +39,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://hanjantest.store",
     "https://www.hanjantest.store",
     # 프론트엔드 도메인이 다르면 여기에 추가
-    # "https://moeun.kro.kr",
+    "https://moeun.kro.kr",
     # 프론트엔드 로컬에서 api연동 테스트를 위한 허용
     "http://localhost:3000",
     "http://localhost:5173",
@@ -50,7 +50,7 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "https://hanjantest.store",
     "https://www.hanjantest.store",
-    # "https://moeun.kro.kr",
+    "https://moeun.kro.kr",
     # 프론트엔드 로컬에서 api연동 테스트를 위한 허용
     "http://localhost:3000",
     "http://localhost:5173",
