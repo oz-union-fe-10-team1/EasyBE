@@ -1,5 +1,10 @@
 from django.urls import include, path
 
+from apps.users.views.user_restore_code_view import (
+    SendRecoveryCodeAPIView,
+    VerifyRecoveryCodeAPIView,
+)
+
 from .views import (
     GoogleLoginView,
     KakaoLoginView,
@@ -19,7 +24,10 @@ v1_patterns = [
     path("auth/state", OAuthStateView.as_view(), name="save_oauth_state"),
     # 사용자 취향 프로필 조회 및 수정
     path("user/taste-profile/", TasteProfileView.as_view(), name="taste_profile"),
+    path("restore/", SendRecoveryCodeAPIView.as_view(), name="save_recovery_code"),
+    path("recovery/verify-email/", VerifyRecoveryCodeAPIView.as_view(), name="verify_email"),
 ]
+
 
 urlpatterns = [
     path("v1/", include((v1_patterns, "v1"), namespace="v1")),
