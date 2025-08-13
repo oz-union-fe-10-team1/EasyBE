@@ -214,7 +214,7 @@ class Feedback(models.Model):
                 raise ValidationError(f"허용되지 않은 태그: {invalid_tags}")
 
     def save(self, *args, **kwargs):
-        """피드백 저장 시 상품 통계 업데이트"""
+        """피드백 저장 시 상품 통계 업데이트 및 취향 프로필 업데이트"""
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
@@ -223,6 +223,10 @@ class Feedback(models.Model):
             product = self.order_item.product
             product.review_count += 1
             product.save(update_fields=["review_count"])
+
+            # 사용자 취향 프로필 업데이트 (새로운 피드백일 때만)
+            if hasattr(self.user, 'taste_profile'):
+                self.user.taste_profile.update_from_review(self)
 
     def delete(self, *args, **kwargs):
         """피드백 삭제 시 상품의 리뷰 수 감소"""
