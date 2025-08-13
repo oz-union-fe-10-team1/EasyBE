@@ -53,6 +53,12 @@ CSRF_TRUSTED_ORIGINS = [
     "https://hanjantest.store",
     "https://www.hanjantest.store",
     "https://moeun.kro.kr",
+
+    # 프론트엔드 로컬에서 api연동 테스트를 위한 허용
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 # 보안 설정
