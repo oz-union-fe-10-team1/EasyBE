@@ -9,7 +9,7 @@ from rest_framework.test import APITestCase
 from apps.cart.models import CartItem
 from apps.orders.models import Order
 from apps.products.models import Brewery, Drink, Product
-from apps.stores.models import ProductStock, Store
+from apps.stores.models import Store
 
 User = get_user_model()
 
@@ -48,11 +48,9 @@ class OrderFromCartAPITest(APITestCase):
             drink=self.drink2, price=20000, description="Desc 2", description_image_url="http://example.com/desc2.jpg"
         )
 
-        # 여러 매장과 재고 설정
+        # 매장 설정
         self.store1 = Store.objects.create(name="Store 1", address="Address 1")
         self.store2 = Store.objects.create(name="Store 2", address="Address 2")
-        self.stock1 = ProductStock.objects.create(product=self.product1, store=self.store1, quantity=10)
-        self.stock2 = ProductStock.objects.create(product=self.product2, store=self.store1, quantity=5)
 
         # URL
         self.create_order_url = "/api/v1/orders/create_from_cart/"
@@ -60,47 +58,21 @@ class OrderFromCartAPITest(APITestCase):
     def test_create_order_from_cart_success(self):
         """장바구니에서 주문 생성 성공 테스트"""
         # Given: 장바구니에 상품 추가
-        CartItem.objects.create(user=self.user, product=self.product1, quantity=2, pickup_store=self.store1, pickup_date=date.today())
-        CartItem.objects.create(user=self.user, product=self.product2, quantity=1, pickup_store=self.store1, pickup_date=date.today())
+        CartItem.objects.create(user=self.user, product=self.product1, quantity=2)
+        CartItem.objects.create(user=self.user, product=self.product2, quantity=1)
 
         # When: 주문 생성 API 호출
         response = self.client.post(self.create_order_url)
 
-        # Then: 주문이 성공적으로 생성되고, 재고가 차감되며, 장바구니가 비워짐
+        # Then: 주문이 성공적으로 생성되고, 장바구니가 비워짐
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Order.objects.count(), 1)
         order = Order.objects.first()
         self.assertEqual(order.total_price, 40000)  # (10000 * 2) + (20000 * 1)
         self.assertEqual(order.items.count(), 2)
 
-        # 재고 차감 확인 (첫 번째 매장에서 차감됨)
-        self.stock1.refresh_from_db()
-        self.stock2.refresh_from_db()
-        self.assertEqual(self.stock1.quantity, 8)
-        self.assertEqual(self.stock2.quantity, 4)
-
         # 장바구니 비워졌는지 확인
         self.assertEqual(CartItem.objects.filter(user=self.user).count(), 0)
-
-    def test_create_order_from_cart_fails_if_stock_insufficient(self):
-        """재고 부족 시 주문 생성 실패 테스트"""
-        # Given: 재고보다 많은 수량을 장바구니에 추가
-        CartItem.objects.create(user=self.user, product=self.product1, quantity=11, pickup_store=self.store1, pickup_date=date.today())  # 재고는 10개
-
-        # When: 주문 생성 API 호출
-        response = self.client.post(self.create_order_url)
-
-        # Then: 400 에러와 함께 재고 부족 메시지를 반환하고, 주문은 생성되지 않음
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("재고가 부족합니다", response.data["detail"])
-        self.assertEqual(Order.objects.count(), 0)
-
-        # 재고가 롤백되었는지 확인
-        self.stock1.refresh_from_db()
-        self.assertEqual(self.stock1.quantity, 10)
-
-        # 장바구니는 그대로 유지됨
-        self.assertEqual(CartItem.objects.filter(user=self.user).count(), 1)
 
     def test_create_order_from_empty_cart(self):
         """빈 장바구니에서 주문 생성 시도 테스트"""

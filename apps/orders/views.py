@@ -32,31 +32,31 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response({"detail": "장바구니가 비어있습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # 픽업 정보가 없으므로, 첫 번째 매장을 기본값으로 사용
+            # 실제 프로덕션에서는 이 정보를 요청 시 받아야 함
+            default_store = Store.objects.first()
+            if not default_store:
+                return Response({"detail": "등록된 매장이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+            pickup_day = date.today()
+
             with transaction.atomic():
                 total_price = sum(item.total_price for item in cart_items)
 
                 # 1. 주문 생성
                 order = Order.objects.create(user=user, total_price=total_price)
 
-                # 2. 주문 항목 생성 및 재고 차감
+                # 2. 주문 항목 생성
                 order_items_to_create = []
                 for item in cart_items:
-                    # CartItem에서 픽업 매장과 날짜를 가져옴
-                    if not item.pickup_store or not item.pickup_date:
-                        raise ValueError(
-                            f"장바구니 항목 '{item.product.name}'에 픽업 매장 또는 픽업 날짜가 지정되지 않았습니다."
-                        )
-
                     order_item = OrderItem(
                         order=order,
                         product=item.product,
                         price=item.product.price,  # 주문 당시 가격 기록
                         quantity=item.quantity,
-                        pickup_store=item.pickup_store,  # CartItem의 픽업 매장 사용
-                        pickup_day=item.pickup_date,  # CartItem의 픽업 날짜 사용
+                        pickup_store=default_store,  # 기본 픽업 매장 사용
+                        pickup_day=pickup_day,  # 오늘 날짜 사용
                     )
-                    # 모델에 정의된 재고 차감 메소드 사용 (ValueError 발생 시 트랜잭션 롤백)
-                    order_item.reserve_stock()
                     order_items_to_create.append(order_item)
 
                 OrderItem.objects.bulk_create(order_items_to_create)
@@ -73,7 +73,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         except ValueError as e:
-            # 재고 부족 또는 재고 정보 없음 오류 처리
+            # 유효성 검사 오류 처리
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
