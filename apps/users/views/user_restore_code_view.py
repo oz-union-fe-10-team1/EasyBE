@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from apps.users.models import User
 from apps.users.serializers import UserRestoreSerializer
 from apps.users.utils.Base62 import generate_base62_code
-from config.settings.base import EMAIL_HOST_USER
+from config.settings.base import EMAIL_APP_USER
 
 
 class SendRecoveryCodeAPIView(APIView):
@@ -30,7 +30,7 @@ class SendRecoveryCodeAPIView(APIView):
         send_mail(
             subject="[서비스명] 계정 복구 인증코드",
             message=f"인증코드: {code}\n5분 안에 입력해주세요.",
-            from_email=EMAIL_HOST_USER,
+            from_email=EMAIL_APP_USER,
             recipient_list=[email],
             fail_silently=False,
         )

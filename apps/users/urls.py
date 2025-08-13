@@ -1,5 +1,10 @@
 from django.urls import include, path
 
+from apps.users.views.user_restore_code_view import (
+    SendRecoveryCodeAPIView,
+    VerifyRecoveryCodeAPIView,
+)
+
 from .views import (
     GoogleLoginView,
     KakaoLoginView,
@@ -7,11 +12,6 @@ from .views import (
     OAuthStateView,
     TasteProfileView,
 )
-from apps.users.views.user_restore_code_view import (
-    SendRecoveryCodeAPIView,
-    VerifyRecoveryCodeAPIView,
-)
-from .views import GoogleLoginView, KakaoLoginView, NaverLoginView, OAuthStateView
 
 app_name = "users"
 
