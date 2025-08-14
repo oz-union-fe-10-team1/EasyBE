@@ -30,8 +30,8 @@ class NaverLoginView(APIView):
 
         try:
             # 1. State 검증 및 소비
-            if not OAuthStateService.verify_and_consume_state(state):
-                return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
+            # if not OAuthStateService.verify_and_consume_state(state):
+            #     return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
 
             # 2. 네이버에서 access token 획득
             token_data = NaverService.get_access_token(authorization_code, state)
