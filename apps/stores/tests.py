@@ -20,8 +20,6 @@ class StoreViewSetAPITest(APITestCase):
         self.store_data = {
             "name": "테스트 매장",
             "address": "서울시 강남구 테스트로 123",
-            "latitude": 37.12345678,
-            "longitude": 127.12345678,
             "contact": "02-1234-5678",
         }
 
