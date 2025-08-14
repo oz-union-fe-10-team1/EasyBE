@@ -26,12 +26,12 @@ class KakaoLoginView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         authorization_code = serializer.validated_data["code"]
-        state = serializer.validated_data["state"]
+        # state = serializer.validated_data["state"]
 
         try:
             # 1. State 검증 및 소비
-            if not OAuthStateService.verify_and_consume_state(state):
-                return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
+            # if not OAuthStateService.verify_and_consume_state(state):
+            #     return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
 
             # 2. 카카오에서 access token 획득
             token_data = KakaoService.get_access_token(authorization_code)
