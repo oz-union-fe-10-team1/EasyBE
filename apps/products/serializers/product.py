@@ -1,13 +1,17 @@
 # apps/products/serializers/product.py
-from decimal import Decimal
+
+from typing import Any, Dict, Optional
 
 from django.db import transaction
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.products.models import Drink, Package, Product, ProductImage
+from apps.products.models import Drink, Package, PackageItem, Product, ProductImage
+from apps.products.serializers.brewery import BrewerySimpleSerializer
 
-from .drink import DrinkSerializer
-from .package import PackageSerializer
+# ============================================================================
+# 기본 시리얼라이저들
+# ============================================================================
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -58,38 +62,46 @@ class ProductListSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-    def get_name(self, obj):
+    @extend_schema_field(serializers.CharField)
+    def get_name(self, obj) -> str:
         return obj.name
 
-    def get_product_type(self, obj):
+    @extend_schema_field(serializers.CharField)
+    def get_product_type(self, obj) -> str:
         return obj.product_type
 
-    def get_main_image_url(self, obj):
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_main_image_url(self, obj) -> Optional[str]:
         """메인 이미지 URL 반환"""
         main_image = obj.images.filter(is_main=True).first()
         return main_image.image_url if main_image else None
 
-    def get_brewery_name(self, obj):
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_brewery_name(self, obj) -> Optional[str]:
         """양조장명 반환"""
         if obj.drink:
             return obj.drink.brewery.name
         return None
 
-    def get_alcohol_type(self, obj):
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_alcohol_type(self, obj) -> Optional[str]:
         """주종 반환"""
         if obj.drink:
             return obj.drink.alcohol_type
         return None
 
-    def get_discount_rate(self, obj):
+    @extend_schema_field(serializers.FloatField)
+    def get_discount_rate(self, obj) -> float:
         """할인율 반환"""
         return obj.get_discount_rate()
 
-    def get_final_price(self, obj):
+    @extend_schema_field(serializers.IntegerField)
+    def get_final_price(self, obj) -> int:
         """최종 가격 반환"""
         return obj.get_final_price()
 
-    def get_is_on_sale(self, obj):
+    @extend_schema_field(serializers.BooleanField)
+    def get_is_on_sale(self, obj) -> bool:
         """할인 중 여부 반환"""
         return obj.is_on_sale()
 
@@ -99,10 +111,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     name = serializers.SerializerMethodField()
     product_type = serializers.SerializerMethodField()
-    drink = DrinkSerializer(read_only=True)
-    package = PackageSerializer(read_only=True)
+
+    # 관련 객체들 - 인라인화된 정보
+    drink = serializers.SerializerMethodField()
+    package = serializers.SerializerMethodField()
     images = ProductImageSerializer(many=True, read_only=True)
 
+    # 할인 정보
     discount_rate = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
     is_on_sale = serializers.SerializerMethodField()
@@ -139,20 +154,99 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def get_name(self, obj):
+    @extend_schema_field(serializers.CharField)
+    def get_name(self, obj) -> str:
         return obj.name
 
-    def get_product_type(self, obj):
+    @extend_schema_field(serializers.CharField)
+    def get_product_type(self, obj) -> str:
         return obj.product_type
 
-    def get_discount_rate(self, obj):
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_drink(self, obj) -> Optional[Dict[str, Any]]:
+        """개별 술 정보 - 인라인화"""
+        if not obj.drink:
+            return None
+
+        drink = obj.drink
+        return {
+            "id": drink.id,
+            "name": drink.name,
+            "brewery": {
+                "id": drink.brewery.id,
+                "name": drink.brewery.name,
+                "region": drink.brewery.region,
+            },
+            "ingredients": drink.ingredients,
+            "alcohol_type": drink.alcohol_type,
+            "alcohol_type_display": drink.get_alcohol_type_display(),
+            "abv": float(drink.abv),
+            "volume_ml": drink.volume_ml,
+            "taste_profile": {
+                "sweetness": float(drink.sweetness_level),
+                "acidity": float(drink.acidity_level),
+                "body": float(drink.body_level),
+                "carbonation": float(drink.carbonation_level),
+                "bitterness": float(drink.bitterness_level),
+                "aroma": float(drink.aroma_level),
+            },
+            "created_at": drink.created_at,
+            "updated_at": drink.updated_at,
+        }
+
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_package(self, obj) -> Optional[Dict[str, Any]]:
+        """패키지 정보 - 인라인화"""
+        if not obj.package:
+            return None
+
+        package = obj.package
+        drinks_data = []
+
+        for drink in package.drinks.all():
+            drinks_data.append(
+                {
+                    "id": drink.id,
+                    "name": drink.name,
+                    "brewery": {
+                        "id": drink.brewery.id,
+                        "name": drink.brewery.name,
+                        "region": drink.brewery.region,
+                    },
+                    "alcohol_type": drink.alcohol_type,
+                    "alcohol_type_display": drink.get_alcohol_type_display(),
+                    "abv": float(drink.abv),
+                    "volume_ml": drink.volume_ml,
+                }
+            )
+
+        return {
+            "id": package.id,
+            "name": package.name,
+            "type": package.type,
+            "type_display": package.get_type_display(),
+            "drinks": drinks_data,
+            "drink_count": package.drinks.count(),
+            "created_at": package.created_at,
+            "updated_at": package.updated_at,
+        }
+
+    @extend_schema_field(serializers.FloatField)
+    def get_discount_rate(self, obj) -> float:
         return obj.get_discount_rate()
 
-    def get_final_price(self, obj):
+    @extend_schema_field(serializers.IntegerField)
+    def get_final_price(self, obj) -> int:
         return obj.get_final_price()
 
-    def get_is_on_sale(self, obj):
+    @extend_schema_field(serializers.BooleanField)
+    def get_is_on_sale(self, obj) -> bool:
         return obj.is_on_sale()
+
+
+# ============================================================================
+# 관리자용 시리얼라이저들
+# ============================================================================
 
 
 class ProductImageCreateSerializer(serializers.ModelSerializer):
@@ -228,10 +322,113 @@ class ProductBaseCreateSerializer(serializers.Serializer):
             ProductImage.objects.create(product=product, **image_data)
 
 
+class DrinkCreateSerializer(serializers.ModelSerializer):
+    """술 생성용 시리얼라이저"""
+
+    brewery_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Drink
+        fields = [
+            "name",
+            "brewery_id",
+            "ingredients",
+            "alcohol_type",
+            "abv",
+            "volume_ml",
+            "sweetness_level",
+            "acidity_level",
+            "body_level",
+            "carbonation_level",
+            "bitterness_level",
+            "aroma_level",
+        ]
+
+    def validate_brewery_id(self, value):
+        """양조장 존재 여부 확인"""
+        from apps.products.models import Brewery
+
+        if not Brewery.objects.filter(id=value, is_active=True).exists():
+            raise serializers.ValidationError("존재하지 않거나 비활성 상태인 양조장입니다.")
+        return value
+
+    def validate_name(self, value):
+        """술 이름 유효성 검사"""
+        if not value or not value.strip():
+            raise serializers.ValidationError("술 이름은 필수입니다.")
+        return value.strip()
+
+    def validate(self, attrs):
+        """전체 유효성 검사 - 중복 이름 체크"""
+        brewery_id = attrs.get("brewery_id")
+        name = attrs.get("name")
+
+        # 같은 양조장에서 동일한 이름의 술이 있는지 확인
+        if Drink.objects.filter(brewery_id=brewery_id, name=name).exists():
+            raise serializers.ValidationError({"name": "같은 양조장에서 동일한 이름의 술이 이미 존재합니다."})
+
+        return attrs
+
+    def create(self, validated_data):
+        """술 생성"""
+        from apps.products.models import Brewery
+
+        brewery_id = validated_data.pop("brewery_id")
+        brewery = Brewery.objects.get(id=brewery_id)
+        return Drink.objects.create(brewery=brewery, **validated_data)
+
+
+class PackageCreateSerializer(serializers.ModelSerializer):
+    """패키지 생성용 시리얼라이저"""
+
+    drink_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        min_length=2,
+        max_length=5,
+        help_text="패키지에 포함할 술 ID 목록 (2~5개)",
+    )
+
+    class Meta:
+        model = Package
+        fields = ["name", "type", "drink_ids"]
+
+    def validate_name(self, value):
+        """패키지 이름 유효성 검사"""
+        if not value or not value.strip():
+            raise serializers.ValidationError("패키지 이름은 필수입니다.")
+        return value.strip()
+
+    def validate_drink_ids(self, value):
+        """술 ID 목록 유효성 검사"""
+        # 중복 체크
+        if len(value) != len(set(value)):
+            raise serializers.ValidationError("중복된 술은 선택할 수 없습니다.")
+
+        # 존재하는 술인지 확인
+        existing_drinks = Drink.objects.filter(id__in=value)
+        if existing_drinks.count() != len(value):
+            raise serializers.ValidationError("존재하지 않는 술이 포함되어 있습니다.")
+
+        return value
+
+    def create(self, validated_data):
+        """패키지 생성"""
+        drink_ids = validated_data.pop("drink_ids")
+        package = Package.objects.create(**validated_data)
+
+        # 패키지 아이템들 생성
+        drinks = Drink.objects.filter(id__in=drink_ids)
+        for drink in drinks:
+            PackageItem.objects.create(package=package, drink=drink)
+
+        return package
+
+
 class IndividualProductCreateSerializer(ProductBaseCreateSerializer):
     """개별 상품 생성용 시리얼라이저"""
 
-    drink_info = DrinkSerializer()
+    drink_info = DrinkCreateSerializer()
 
     @transaction.atomic
     def create(self, validated_data):
@@ -240,7 +437,7 @@ class IndividualProductCreateSerializer(ProductBaseCreateSerializer):
         images_data = validated_data.pop("images")
 
         # 1. 술 생성
-        drink_serializer = DrinkSerializer(data=drink_data)
+        drink_serializer = DrinkCreateSerializer(data=drink_data)
         drink_serializer.is_valid(raise_exception=True)
         drink = drink_serializer.save()
 
@@ -260,7 +457,7 @@ class IndividualProductCreateSerializer(ProductBaseCreateSerializer):
 class PackageProductCreateSerializer(ProductBaseCreateSerializer):
     """패키지 상품 생성용 시리얼라이저"""
 
-    package_info = PackageSerializer()
+    package_info = PackageCreateSerializer()
 
     @transaction.atomic
     def create(self, validated_data):
@@ -269,7 +466,7 @@ class PackageProductCreateSerializer(ProductBaseCreateSerializer):
         images_data = validated_data.pop("images")
 
         # 1. 패키지 생성
-        package_serializer = PackageSerializer(data=package_data)
+        package_serializer = PackageCreateSerializer(data=package_data)
         package_serializer.is_valid(raise_exception=True)
         package = package_serializer.save()
 
@@ -286,57 +483,40 @@ class PackageProductCreateSerializer(ProductBaseCreateSerializer):
         return ProductDetailSerializer(instance).data
 
 
-class ProductFilterSerializer(serializers.Serializer):
-    """상품 필터링용 시리얼라이저 (UI 기반)"""
-
-    # 체크박스 필터들 (UI 상세 검색)
-    is_gift_suitable = serializers.BooleanField(required=False)
-    is_regional_specialty = serializers.BooleanField(required=False)
-    is_award_winning = serializers.BooleanField(required=False)
-    is_limited_edition = serializers.BooleanField(required=False)
-
-    # 맛 프로필 슬라이더들 (0.0 ~ 5.0)
-    sweetness_level = serializers.DecimalField(
-        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
-    )
-    acidity_level = serializers.DecimalField(
-        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
-    )
-    bitterness_level = serializers.DecimalField(
-        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
-    )
-    body_level = serializers.DecimalField(
-        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
-    )
-    carbonation_level = serializers.DecimalField(
-        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
-    )
-    aroma_level = serializers.DecimalField(
-        max_digits=3, decimal_places=1, min_value=Decimal("0.0"), max_value=Decimal("5.0"), required=False
-    )
-
-    # 검색
-    search = serializers.CharField(max_length=100, required=False)
-
-    # 정렬
-    ordering = serializers.ChoiceField(
-        choices=[
-            "price",
-            "-price",
-            "created_at",
-            "-created_at",
-            "view_count",
-            "-view_count",
-            "like_count",
-            "-like_count",
-        ],
-        required=False,
-        default="-created_at",
-    )
+# ============================================================================
+# 패키지 생성용 술 목록 시리얼라이저
+# ============================================================================
 
 
-class ProductLikeSerializer(serializers.Serializer):
-    """상품 좋아요 응답용 시리얼라이저"""
+class DrinkForPackageSerializer(serializers.ModelSerializer):
+    """패키지 생성용 술 목록 시리얼라이저"""
 
-    is_liked = serializers.BooleanField()
-    like_count = serializers.IntegerField()
+    brewery = BrewerySimpleSerializer(read_only=True)
+    main_image = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Drink
+        fields = ["id", "name", "brewery", "alcohol_type", "abv", "main_image", "price"]
+
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_main_image(self, obj) -> Optional[str]:
+        """술의 메인 이미지 URL 반환"""
+        try:
+            if hasattr(obj, "product") and obj.product:
+                main_image = obj.product.images.filter(is_main=True).first()
+                if main_image:
+                    return main_image.image_url
+        except:
+            pass
+        return None
+
+    @extend_schema_field(serializers.IntegerField(allow_null=True))
+    def get_price(self, obj) -> Optional[int]:
+        """술의 개별 상품 가격 반환"""
+        try:
+            if hasattr(obj, "product") and obj.product:
+                return obj.product.price
+        except:
+            pass
+        return None

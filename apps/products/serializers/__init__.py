@@ -6,46 +6,30 @@ from .brewery import (
     BrewerySimpleSerializer,
 )
 from .drink import (
-    DrinkForPackageSerializer,
     DrinkListSerializer,
-    DrinkSerializer,
-    DrinkSimpleSerializer,
-)
-from .package import (
-    PackageListSerializer,
-    PackageSerializer,
-    PackageSimpleSerializer,
 )
 from .product import (
+    DrinkForPackageSerializer,
     IndividualProductCreateSerializer,
     PackageProductCreateSerializer,
     ProductDetailSerializer,
-    ProductFilterSerializer,
     ProductImageSerializer,
-    ProductLikeSerializer,
     ProductListSerializer,
 )
 
 __all__ = [
-    # Brewery
+    # Brewery (관리자용 - 모든 기능 유지)
     "BreweryListSerializer",
     "BrewerySerializer",
     "BrewerySimpleSerializer",
-    # Drink
+    # Drink (관리자용 - 목록만)
     "DrinkListSerializer",
-    "DrinkSerializer",
-    "DrinkForPackageSerializer",
-    "DrinkSimpleSerializer",
-    # Package
-    "PackageListSerializer",
-    "PackageSerializer",
-    "PackageSimpleSerializer",
-    # Product
+    # Product (UI용 + 관리자용)
     "ProductImageSerializer",
     "ProductListSerializer",
     "ProductDetailSerializer",
+    # 관리자용 제품 생성
     "IndividualProductCreateSerializer",
     "PackageProductCreateSerializer",
-    "ProductFilterSerializer",
-    "ProductLikeSerializer",
+    "DrinkForPackageSerializer",
 ]

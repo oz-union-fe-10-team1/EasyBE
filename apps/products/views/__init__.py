@@ -1,4 +1,4 @@
-# apps/products/views/__init__.py
+# apps/products/views/__init__.py 수정
 
 from .brewery import (
     BreweryCreateView,
@@ -7,53 +7,36 @@ from .brewery import (
     BreweryManageView,
 )
 from .drink import (
-    DrinkCreateView,
-    DrinkDetailView,
     DrinkListView,
-    DrinkManageView,
-)
-from .package import (
-    PackageCreateView,
-    PackageDetailView,
-    PackageListView,
-    PackageManageView,
 )
 from .product import (
-    DrinksForPackageView,
+    AwardWinningProductsView,
     FeaturedProductsView,
-    IndividualProductCreateView,
-    PackageProductCreateView,
+    MakgeolliProductsView,
     PopularProductsView,
-    ProductDeleteView,
     ProductDetailView,
     ProductLikeToggleView,
-    ProductListView,
+    ProductSearchView,
+    RecommendedProductsView,
+    RegionalProductsView,
 )
 
 __all__ = [
-    # Brewery
+    # Brewery (관리자용)
     "BreweryListView",
     "BreweryDetailView",
     "BreweryCreateView",
     "BreweryManageView",
-    # Drink
+    # Drink (관리자용 - 목록만)
     "DrinkListView",
-    "DrinkDetailView",
-    "DrinkCreateView",
-    "DrinkManageView",
-    # Package
-    "PackageListView",
-    "PackageDetailView",
-    "PackageCreateView",
-    "PackageManageView",
-    # Product
-    "ProductListView",
+    # Product (UI용)
+    "ProductSearchView",
     "ProductDetailView",
-    "ProductDeleteView",
-    "IndividualProductCreateView",
-    "PackageProductCreateView",
-    "DrinksForPackageView",
     "ProductLikeToggleView",
     "PopularProductsView",
     "FeaturedProductsView",
+    "AwardWinningProductsView",
+    "MakgeolliProductsView",
+    "RegionalProductsView",
+    "RecommendedProductsView",
 ]
