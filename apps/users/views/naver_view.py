@@ -28,7 +28,6 @@ class NaverLoginView(APIView):
         authorization_code = serializer.validated_data["code"]
         state = serializer.validated_data["state"]
 
-
         # 1. State 검증 및 소비
         if not OAuthStateService.verify_and_consume_state(state):
             return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
