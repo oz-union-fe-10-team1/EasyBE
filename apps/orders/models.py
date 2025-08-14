@@ -98,8 +98,6 @@ class OrderItem(models.Model):
     pickup_status = models.BooleanField(default=False, help_text="픽업 완료 여부")
 
     # 선물 관련
-    is_gift = models.BooleanField(default=False, help_text="선물 포장 여부")
-    gift_message = models.TextField(null=True, blank=True, help_text="선물 메시지")
 
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -58,8 +58,12 @@ class OrderFromCartAPITest(APITestCase):
     def test_create_order_from_cart_success(self):
         """장바구니에서 주문 생성 성공 테스트"""
         # Given: 장바구니에 상품 추가
-        CartItem.objects.create(user=self.user, product=self.product1, quantity=2)
-        CartItem.objects.create(user=self.user, product=self.product2, quantity=1)
+        CartItem.objects.create(
+            user=self.user, product=self.product1, quantity=2, pickup_store=self.store1, pickup_date=date.today()
+        )
+        CartItem.objects.create(
+            user=self.user, product=self.product2, quantity=1, pickup_store=self.store1, pickup_date=date.today()
+        )
 
         # When: 주문 생성 API 호출
         response = self.client.post(self.create_order_url)
@@ -84,6 +88,19 @@ class OrderFromCartAPITest(APITestCase):
         # Then: 400 에러와 함께 장바구니가 비었다는 메시지를 반환
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("장바구니가 비어있습니다", response.data["detail"])
+
+    def test_create_order_from_cart_fails_if_no_pickup_info(self):
+        """장바구니에 픽업 정보가 없을 때 주문 생성 실패 테스트"""
+        # Given: 장바구니에 픽업 정보 없이 상품 추가
+        CartItem.objects.create(user=self.user, product=self.product1, quantity=1)  # No pickup_store or pickup_date
+
+        # When: 주문 생성 API 호출
+        response = self.client.post(self.create_order_url)
+
+        # Then: 400 에러와 함께 픽업 정보 부족 메시지를 반환
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("픽업매장을 선택해주세요.", response.data["detail"])
+        self.assertEqual(Order.objects.count(), 0)  # Order should not be created
 
     def test_unauthenticated_user_cannot_create_order_from_cart(self):
         """인증되지 않은 사용자의 주문 생성 실패 테스트"""
