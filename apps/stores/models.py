@@ -24,4 +24,3 @@ class Store(models.Model):
         indexes = [
             models.Index(fields=["name"]),
         ]
-
