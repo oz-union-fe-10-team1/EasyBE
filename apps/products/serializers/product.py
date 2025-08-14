@@ -360,14 +360,12 @@ class DrinkCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         """전체 유효성 검사 - 중복 이름 체크"""
-        brewery_id = attrs.get('brewery_id')
-        name = attrs.get('name')
+        brewery_id = attrs.get("brewery_id")
+        name = attrs.get("name")
 
         # 같은 양조장에서 동일한 이름의 술이 있는지 확인
         if Drink.objects.filter(brewery_id=brewery_id, name=name).exists():
-            raise serializers.ValidationError({
-                "name": "같은 양조장에서 동일한 이름의 술이 이미 존재합니다."
-            })
+            raise serializers.ValidationError({"name": "같은 양조장에서 동일한 이름의 술이 이미 존재합니다."})
 
         return attrs
 

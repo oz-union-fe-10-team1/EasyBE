@@ -2,7 +2,7 @@
 
 from django.test import TestCase
 
-from apps.products.models import ProductImage, Product
+from apps.products.models import Product, ProductImage
 
 from .test_helpers import TestDataCreator
 
@@ -66,14 +66,10 @@ class DrinkSerializerTest(BaseSerializerTestCase):
         product = Product.objects.filter(drink=self.drink).first()
         if not product:
             # 테스트용 개별 상품 생성
-            product = Product.objects.create(
-                drink=self.drink,
-                price=15000,
-                description="테스트 상품"
-            )
+            product = Product.objects.create(drink=self.drink, price=15000, description="테스트 상품")
 
         serializer = ProductDetailSerializer(product)
-        drink_data = serializer.data['drink']
+        drink_data = serializer.data["drink"]
 
         self.assertEqual(drink_data["name"], "우리쌀막걸리")
         self.assertEqual(drink_data["abv"], 6.5)  # float로 변경
@@ -88,14 +84,10 @@ class DrinkSerializerTest(BaseSerializerTestCase):
 
         product = Product.objects.filter(drink=self.drink).first()
         if not product:
-            product = Product.objects.create(
-                drink=self.drink,
-                price=15000,
-                description="테스트 상품"
-            )
+            product = Product.objects.create(drink=self.drink, price=15000, description="테스트 상품")
 
         serializer = ProductDetailSerializer(product)
-        drink_data = serializer.data['drink']
+        drink_data = serializer.data["drink"]
 
         # 맛 프로필 확인
         self.assertIn("taste_profile", drink_data)
@@ -130,14 +122,10 @@ class PackageSerializerTest(BaseSerializerTestCase):
         product = Product.objects.filter(package=self.package).first()
         if not product:
             # 테스트용 패키지 상품 생성
-            product = Product.objects.create(
-                package=self.package,
-                price=50000,
-                description="테스트 패키지 상품"
-            )
+            product = Product.objects.create(package=self.package, price=50000, description="테스트 패키지 상품")
 
         serializer = ProductDetailSerializer(product)
-        package_data = serializer.data['package']
+        package_data = serializer.data["package"]
 
         self.assertEqual(package_data["name"], "전통주 입문세트")
         self.assertEqual(package_data["type"], "CURATED")
@@ -280,6 +268,7 @@ class ProductCreationSerializerTest(BaseSerializerTestCase):
 # ProductFilterSerializerTest 클래스는 ProductFilterSerializer가 존재하지 않으므로 삭제
 # 대신 실제 API를 통한 필터링 테스트로 대체
 
+
 class ProductFilterAPITest(BaseSerializerTestCase):
     """상품 필터링 API 테스트 (Serializer 대신 실제 API 테스트)"""
 
@@ -290,10 +279,13 @@ class ProductFilterAPITest(BaseSerializerTestCase):
         url = reverse("api:v1:products-list")  # 실제 search endpoint
 
         # 유효한 필터 파라미터
-        response = self.client.get(url, {
-            'search': '막걸리',
-            'ordering': '-created_at',
-        })
+        response = self.client.get(
+            url,
+            {
+                "search": "막걸리",
+                "ordering": "-created_at",
+            },
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_taste_profile_filtering(self):
@@ -303,7 +295,10 @@ class ProductFilterAPITest(BaseSerializerTestCase):
         url = reverse("api:v1:products-list")
 
         # 맛 프로필 필터 (실제 API에서 지원하는 파라미터만)
-        response = self.client.get(url, {
-            'alcohol_type': 'MAKGEOLLI',
-        })
+        response = self.client.get(
+            url,
+            {
+                "alcohol_type": "MAKGEOLLI",
+            },
+        )
         self.assertEqual(response.status_code, 200)

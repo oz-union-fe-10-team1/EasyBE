@@ -12,12 +12,12 @@ from .drink import (
 from .product import (
     AwardWinningProductsView,
     FeaturedProductsView,
-    RecommendedProductsView,
     MakgeolliProductsView,
     PopularProductsView,
     ProductDetailView,
     ProductLikeToggleView,
     ProductSearchView,
+    RecommendedProductsView,
     RegionalProductsView,
 )
 

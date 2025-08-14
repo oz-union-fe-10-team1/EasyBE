@@ -35,7 +35,7 @@ class BreweryAPITest(BaseAPITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["results"]), 3)
+        self.assertEqual(len(response.data["results"]), 4)
 
         first_brewery = response.data["results"][0]
         expected_fields = {"id", "name", "region", "image_url", "product_count"}
@@ -71,7 +71,7 @@ class ProductListAPITest(BaseAPITestCase):
         self.assertIn("count", response.data)
 
         results = response.data["results"]
-        self.assertEqual(len(results), 6)
+        self.assertEqual(len(results), 8)
 
         first_product = results[0]
         expected_fields = {
