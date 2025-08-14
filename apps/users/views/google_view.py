@@ -29,11 +29,11 @@ class GoogleLoginView(APIView):
         authorization_code = serializer.validated_data["code"]
         state = serializer.validated_data["state"]
 
-        try:
-            # 1. State 검증 및 소비
-            if not OAuthStateService.verify_and_consume_state(state):
-                return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
+        # 1. State 검증 및 소비
+        if not OAuthStateService.verify_and_consume_state(state):
+            return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
             # 2. 구글에서 access token 획득
             token_data = GoogleService.get_access_token(authorization_code)
             access_token = token_data["access_token"]
