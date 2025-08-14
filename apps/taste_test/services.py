@@ -231,7 +231,7 @@ class TasteTestData:
 
 
 class TasteTestService:
-    """입맛 테스트 서비스"""
+    """입맛 테스트 서비스 (진화하는 취향 시스템 지원)"""
 
     @staticmethod
     def get_questions() -> List[Dict]:
@@ -307,10 +307,10 @@ class TasteTestService:
 
     @classmethod
     def save_test_result(cls, user, answers: Dict[str, str]) -> PreferenceTestResult:
-        """테스트 결과를 DB에 저장"""
+        """테스트 결과를 DB에 저장 (개선된 재테스트 지원)"""
         # 테스트 결과 처리
-        test_result = cls.process_taste_test(answers)
-        korean_type = test_result["type"]
+        test_result_data = cls.process_taste_test(answers)
+        korean_type = test_result_data["type"]
 
         # enum 값 가져오기
         enum_value = TasteTestData.get_enum_by_korean_name(korean_type)
@@ -319,58 +319,154 @@ class TasteTestService:
 
         prefer_taste_enum = getattr(PreferenceTestResult.PreferTaste, enum_value)
 
-        # DB 저장
+        # 기존 테스트 결과 확인
+        existing_result = PreferenceTestResult.objects.filter(user=user).first()
+        is_new_test = existing_result is None
+
+        # DB 저장 (재테스트면 업데이트, 신규면 생성)
         result, created = PreferenceTestResult.objects.update_or_create(
             user=user, defaults={"answers": answers, "prefer_taste": prefer_taste_enum}
         )
 
-        # PreferTasteProfile 처리 (있는 경우)
-        cls._handle_taste_profile(user, result, created)
+        # PreferTasteProfile 처리
+        profile_result = cls._handle_taste_profile(user, result, is_new_test)
+
+        # 결과에 프로필 처리 정보 추가
+        result.profile_update_result = profile_result
 
         return result
 
     @classmethod
-    def _handle_taste_profile(cls, user, test_result, is_new_test):
-        """PreferTasteProfile 초기화/업데이트 처리"""
+    def get_retake_preview(cls, user, answers: Dict[str, str]) -> Dict:
+        """재테스트 시 변화 미리보기 (실제 저장하지 않음)"""
         try:
             from django.apps import apps
 
-            PreferTasteProfile = apps.get_model("taste_test", "PreferTasteProfile")
+            PreferTasteProfile = apps.get_model("users", "PreferTasteProfile")
 
-            profile, _ = PreferTasteProfile.objects.get_or_create(user=user)
+            # 현재 프로필 가져오기
+            profile = PreferTasteProfile.objects.get(user=user)
 
-            if hasattr(profile, "is_initialized") and not profile.is_initialized:
-                # 첫 테스트
-                if hasattr(profile, "initialize_from_test_result"):
-                    profile.initialize_from_test_result(test_result)
-            elif not is_new_test:
-                # 재테스트
-                cls._update_profile_from_retake(profile, test_result)
+            # 새 테스트 결과 계산
+            test_result_data = cls.process_taste_test(answers)
+            korean_type = test_result_data["type"]
 
-        except (ImportError, LookupError):
-            pass
+            enum_value = TasteTestData.get_enum_by_korean_name(korean_type)
+            if not enum_value:
+                enum_value = "GOURMET"
+
+            # 새로운 기본 점수
+            new_base_scores = TasteTestData.TASTE_PROFILES.get(enum_value, TasteTestData.TASTE_PROFILES["GOURMET"])
+
+            # 영향력 계산
+            review_count = profile.total_reviews_count
+            if review_count < 5:
+                test_influence = 0.8
+            elif review_count < 20:
+                test_influence = 0.4
+            else:
+                test_influence = 0.1
+
+            current_influence = 1.0 - test_influence
+
+            # 변화 미리보기 계산
+            preview_changes = {}
+            taste_names = {
+                "sweetness_level": "단맛",
+                "acidity_level": "산미",
+                "body_level": "바디감",
+                "carbonation_level": "탄산감",
+                "bitterness_level": "쓴맛",
+                "aroma_level": "향",
+            }
+
+            for field in [
+                "sweetness_level",
+                "acidity_level",
+                "body_level",
+                "carbonation_level",
+                "bitterness_level",
+                "aroma_level",
+            ]:
+                current_value = float(getattr(profile, field))
+                new_base_value = float(new_base_scores[field])
+
+                predicted_value = (current_value * current_influence) + (new_base_value * test_influence)
+                predicted_value = max(0.0, min(5.0, predicted_value))
+
+                change = predicted_value - current_value
+
+                if abs(change) >= 0.2:
+                    preview_changes[field] = {
+                        "name": taste_names[field],
+                        "current": round(current_value, 1),
+                        "predicted": round(predicted_value, 1),
+                        "change": round(change, 1),
+                        "direction": "증가" if change > 0 else "감소",
+                    }
+
+            return {
+                "new_type": korean_type,
+                "current_type": cls.get_type_info_by_enum(profile.user.preference_test_result.prefer_taste)["name"],
+                "influence_rate": f"{int(test_influence * 100)}%",
+                "review_count": review_count,
+                "predicted_changes": preview_changes,
+                "message": cls._generate_preview_message(review_count, test_influence, len(preview_changes)),
+            }
+
+        except Exception as e:
+            return {"error": "미리보기를 생성할 수 없습니다.", "details": str(e)}
 
     @classmethod
-    def _update_profile_from_retake(cls, profile, new_test_result):
-        """재테스트 시 프로필 업데이트"""
-        # 기존 학습 변화량 계산
-        old_base_scores = cls.get_taste_type_base_scores(profile.user.preference_test_result.prefer_taste)
+    def _handle_taste_profile(cls, user, test_result, is_new_test):
+        """PreferTasteProfile 초기화/업데이트 처리 (개선된 재테스트 지원)"""
+        try:
+            from django.apps import apps
 
-        learning_offsets = {
-            field: float(getattr(profile, f"{field}_level")) - old_base_scores[f"{field}_level"]
-            for field in ["sweetness", "acidity", "body", "carbonation", "bitterness", "aroma"]
-        }
+            PreferTasteProfile = apps.get_model("users", "PreferTasteProfile")
 
-        # 새 기본값 적용
-        new_base_scores = cls.get_taste_type_base_scores(new_test_result.prefer_taste)
+            profile, profile_created = PreferTasteProfile.objects.get_or_create(user=user)
 
-        # 새 기본값 + 기존 학습량 적용
-        for field in learning_offsets:
-            new_value = new_base_scores[f"{field}_level"] + learning_offsets[field]
-            clamped_value = max(0.0, min(5.0, new_value))
-            setattr(profile, f"{field}_level", Decimal(str(clamped_value)))
+            if profile_created or profile.total_reviews_count == 0:
+                # 첫 테스트 또는 리뷰 경험이 없는 경우
+                profile.initialize_from_test_result(test_result)
+                return {"action": "initialized", "message": "취향 프로필이 초기화되었습니다."}
 
-        profile.save()
+            elif not is_new_test:
+                # 재테스트인 경우
+                retake_result = profile.handle_retake(test_result)
+                return {
+                    "action": "retake_applied",
+                    "influence_rate": retake_result["influence_rate"],
+                    "changes_made": retake_result["changes_made"],
+                    "message": retake_result["message"],
+                }
+
+            else:
+                # 이미 테스트가 있는데 새 테스트로 들어온 경우 (예외 상황)
+                return {"action": "no_change", "message": "기존 테스트 결과가 유지됩니다."}
+
+        except (ImportError, LookupError):
+            # PreferTasteProfile이 없는 경우
+            return {"action": "skipped", "message": "취향 프로필 처리를 건너뛰었습니다."}
+
+    @classmethod
+    def _generate_preview_message(cls, review_count: int, test_influence: float, change_count: int) -> str:
+        """재테스트 미리보기 메시지 생성"""
+
+        if review_count < 5:
+            base_msg = f"초기 단계라 테스트 결과가 {int(test_influence * 100)}% 반영됩니다."
+        elif review_count < 20:
+            base_msg = f"기존 학습과 새 테스트 결과를 {int(test_influence * 100)}% 비율로 조합합니다."
+        else:
+            base_msg = f"오랜 경험이 쌓여서 새 테스트 결과는 {int(test_influence * 100)}%만 반영됩니다."
+
+        if change_count == 0:
+            return f"{base_msg} 큰 변화는 예상되지 않습니다."
+        elif change_count <= 2:
+            return f"{base_msg} 일부 취향에서 미세한 변화가 예상됩니다."
+        else:
+            return f"{base_msg} 여러 취향 요소에서 변화가 예상됩니다."
 
     @staticmethod
     def validate_answers(answers: Dict[str, str]) -> Dict[str, List[str]]:

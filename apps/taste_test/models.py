@@ -30,6 +30,11 @@ class PreferenceTestResult(models.Model):
             models.Index(fields=["-created_at"]),
         ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 동적 속성 초기화 (mypy 타입 체크용)
+        self.profile_update_result = None
+
     def __str__(self):
         return f"{self.user.nickname} - {self.get_prefer_taste_display()}"
 

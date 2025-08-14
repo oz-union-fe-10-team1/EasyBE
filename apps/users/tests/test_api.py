@@ -1,4 +1,4 @@
-# apps/users/tests.py에 추가
+# apps/users/tests/test_api.py
 
 from decimal import Decimal
 
@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import PreferTasteProfile
+from apps.users.models import PreferTasteProfile
 
 User = get_user_model()
 

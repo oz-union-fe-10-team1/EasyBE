@@ -1,6 +1,8 @@
 # apps/users/utils/taste_analysis.py
-
+import math
 from decimal import Decimal
+from typing import Dict
+
 from apps.users.models import PreferTasteProfile
 
 
@@ -114,37 +116,34 @@ class TasteAnalysisService:
     @staticmethod
     def update_taste_profile_from_feedback(profile: PreferTasteProfile, feedback):
         """
-        피드백을 바탕으로 정교한 취향 점수 업데이트
-
-        Args:
-            profile: 업데이트할 취향 프로필
-            feedback: 사용자 피드백 (Feedback 모델 인스턴스)
+        피드백을 바탕으로 진화하는 취향 점수 업데이트
         """
         from apps.taste_test.services import TasteTestData
 
         # 1. 기본 데이터 수집
         drink = feedback.order_item.product.drink
         if not drink:
-            # 패키지 상품의 경우 처리 로직 (필요시 구현)
             return
 
-        # 사용자 기본 취향 점수 (테스트 결과 기반)
-        base_scores = TasteTestData.TASTE_PROFILES.get(
-            profile.user.preference_test_result.prefer_taste,
-            TasteTestData.TASTE_PROFILES["GOURMET"]
+        # 2. 진화하는 기준점 계산 (기본값 + 최근 취향)
+        evolving_anchor = TasteAnalysisService._calculate_evolving_anchor(
+            profile,
+            TasteTestData.TASTE_PROFILES.get(
+                profile.user.preference_test_result.prefer_taste, TasteTestData.TASTE_PROFILES["GOURMET"]
+            ),
         )
 
-        # 2. 가중치 계산
-        weights = TasteAnalysisService._calculate_weights(feedback, profile.total_reviews_count)
+        # 3. 적응적 학습률 계산
+        learning_rate = TasteAnalysisService._calculate_adaptive_learning_rate(feedback, profile.total_reviews_count)
 
-        # 3. 각 맛 특성별 업데이트
+        # 4. 각 맛 특성별 업데이트
         taste_fields = {
-            'sweetness_level': 'sweetness',
-            'acidity_level': 'acidity',
-            'body_level': 'body',
-            'carbonation_level': 'carbonation',
-            'bitterness_level': 'bitterness',
-            'aroma_level': 'aroma'
+            "sweetness_level": "sweetness",
+            "acidity_level": "acidity",
+            "body_level": "body",
+            "carbonation_level": "carbonation",
+            "bitterness_level": "bitterness",
+            "aroma_level": "aroma",
         }
 
         for profile_field, feedback_field in taste_fields.items():
@@ -155,8 +154,8 @@ class TasteAnalysisService:
             # 현재 사용자 취향
             current_preference = float(getattr(profile, profile_field))
 
-            # 사용자 기본 취향 (테스트 결과)
-            base_preference = float(base_scores[profile_field])
+            # 진화하는 기준점 (기본값 + 최근 학습된 패턴)
+            anchor_preference = evolving_anchor[profile_field]
 
             # 제품의 실제 맛 특성
             drink_characteristic = float(getattr(drink, profile_field))
@@ -164,135 +163,225 @@ class TasteAnalysisService:
             # 사용자 피드백 점수
             user_feedback_score = float(user_feedback)
 
-            # 4. 취향 조정 계산
-            adjustment = TasteAnalysisService._calculate_taste_adjustment(
+            # 5. 진화적 취향 조정 계산
+            adjustment = TasteAnalysisService._calculate_evolutionary_adjustment(
                 current_preference=current_preference,
-                base_preference=base_preference,
+                anchor_preference=anchor_preference,
                 drink_characteristic=drink_characteristic,
                 user_feedback_score=user_feedback_score,
-                weights=weights,
-                rating=feedback.rating
+                learning_rate=learning_rate,
+                rating=feedback.rating,
+                review_count=profile.total_reviews_count,
             )
 
-            # 5. 새로운 취향 점수 적용
+            # 6. 새로운 취향 점수 적용
             new_preference = current_preference + adjustment
-            new_preference = max(0.0, min(5.0, new_preference))  # 범위 제한
+            new_preference = max(0.0, min(5.0, new_preference))
 
             setattr(profile, profile_field, Decimal(str(round(new_preference, 1))))
 
-        # 6. 메타데이터 업데이트
+        # 7. 메타데이터 업데이트
         profile.total_reviews_count += 1
         profile.save()
 
     @staticmethod
-    def _calculate_weights(feedback, total_review_count: int) -> dict:
-        """가중치 계산"""
+    def _calculate_evolving_anchor(profile: PreferTasteProfile, base_scores: Dict) -> Dict[str, float]:
+        """
+        진화하는 기준점 계산 (기본값 영향력이 시간에 따라 감소)
+        """
+        review_count = profile.total_reviews_count
 
-        # 평점 가중치: 1점=0.2, 5점=1.0
-        rating_weight = feedback.rating / 5.0
+        # 1. 기본값 영향력 시간 감쇠
+        base_influence = max(0.1, 1.0 / (1 + review_count * 0.15))
+        # 리뷰 0개: 1.0, 5개: 0.57, 10개: 0.4, 20개: 0.25, 50개: 0.12
 
-        # 신뢰도 가중치: 0%=0.1(최소), 100%=1.0
-        confidence_weight = max(0.1, feedback.confidence / 100.0)
+        # 2. 최근 취향 중심 계산 (최근 학습된 패턴)
+        recent_influence = 1.0 - base_influence
 
-        # 리뷰 경험 가중치: 초기에는 변화 크게, 경험 쌓일수록 안정화
-        experience_weight = min(1.0, 1.0 / (1.0 + total_review_count * 0.1))
+        # 3. 최근 취향 중심점 (현재 값이 최근 학습 결과를 반영)
+        current_scores = profile.get_taste_scores_dict()
 
-        # 최종 가중치
-        final_weight = rating_weight * confidence_weight * experience_weight
+        # 4. 진화하는 기준점 = 기본값 * 감쇠율 + 현재값 * 증가율
+        evolving_anchor = {}
+
+        for field in [
+            "sweetness_level",
+            "acidity_level",
+            "body_level",
+            "carbonation_level",
+            "bitterness_level",
+            "aroma_level",
+        ]:
+            base_value = float(base_scores[field])
+            current_value = current_scores[field]
+
+            # 가중 평균으로 새로운 기준점 계산
+            anchor_value = (base_value * base_influence) + (current_value * recent_influence)
+            evolving_anchor[field] = anchor_value
+
+        return evolving_anchor
+
+    @staticmethod
+    def _calculate_adaptive_learning_rate(feedback, total_review_count: int) -> dict:
+        """
+        적응적 학습률 계산 (더 자유로운 학습)
+        """
+        # 1. 기본 학습률 (더 관대하게 조정)
+        base_rate = 0.9 / (1 + math.log(1 + total_review_count * 0.3))
+        # 초기 학습률을 높이고, 감소 속도를 완화
+
+        # 2. 평점 기반 가중치 (극단적 평점일수록 더 강한 신호)
+        if feedback.rating <= 2:
+            rating_multiplier = 2.0  # 부정적 경험 강화
+        elif feedback.rating >= 4:
+            rating_multiplier = 1.6  # 긍정적 경험 강화
+        else:
+            rating_multiplier = 1.2  # 보통 평점도 적극 반영
+
+        # 3. 신뢰도 가중치
+        confidence_weight = 0.6 + (feedback.confidence / 100.0) * 0.4  # 0.6~1.0 범위
+
+        # 4. 초기 학습 부스트 (더 긴 기간 동안)
+        if total_review_count < 10:  # 첫 10개까지 부스트
+            early_boost = 1.8 - (total_review_count * 0.08)  # 1.8 → 1.0
+        else:
+            early_boost = 1.0
+
+        # 5. 최종 학습률 (제한을 더 관대하게)
+        final_rate = base_rate * rating_multiplier * confidence_weight * early_boost
 
         return {
-            'rating_weight': rating_weight,
-            'confidence_weight': confidence_weight,
-            'experience_weight': experience_weight,
-            'final_weight': final_weight
+            "base_rate": base_rate,
+            "rating_multiplier": rating_multiplier,
+            "confidence_weight": confidence_weight,
+            "early_boost": early_boost,
+            "final_rate": min(final_rate, 0.8),  # 최대 0.8로 상향
         }
 
     @staticmethod
-    def _calculate_expected_score(user_preference: float, drink_characteristic: float) -> float:
+    def _calculate_evolutionary_adjustment(
+        current_preference: float,
+        anchor_preference: float,
+        drink_characteristic: float,
+        user_feedback_score: float,
+        learning_rate: dict,
+        rating: int,
+        review_count: int,
+    ) -> float:
         """
-        사용자 취향과 제품 특성을 바탕으로 예상 평가 점수 계산
-
-        로직:
-        - 사용자 취향과 제품 특성이 모두 높으면 → 높은 평가 예상
-        - 사용자 취향은 높은데 제품 특성이 낮으면 → 낮은 평가 예상
-        """
-        # 단순한 곱셈 기반 예상 (개선 가능)
-        # 정규화: (user_pref/5) * (drink_char/5) * 5 = 상호작용 점수
-        normalized_user = user_preference / 5.0
-        normalized_drink = drink_characteristic / 5.0
-
-        # 기본 예상: 둘의 상호작용
-        base_expected = normalized_user * normalized_drink * 5.0
-
-        # 사용자 선호도가 낮을 때는 제품이 강해도 부정적일 수 있음
-        if user_preference < 2.0 and drink_characteristic > 3.0:
-            # 선호하지 않는 맛이 강하면 더 낮게 평가할 것으로 예상
-            penalty = (drink_characteristic - 2.0) * 0.3
-            base_expected = max(0.0, base_expected - penalty)
-
-        return base_expected
-
-    @staticmethod
-    def _calculate_taste_adjustment(current_preference: float, base_preference: float,
-                                    drink_characteristic: float, user_feedback_score: float,
-                                    weights: dict, rating: int) -> float:
-        """
-        취향 조정값 계산
-
-        다양한 시나리오 고려:
-        1. 예상보다 높게 평가 → 해당 맛에 대한 선호도 증가
-        2. 예상보다 낮게 평가 → 해당 맛에 대한 선호도 감소
-        3. 평점이 낮으면 → 더 큰 조정 (부정적 경험은 강하게 기억)
-        4. 극단적인 제품에서의 피드백 → 더 신뢰할 만한 데이터
+        진화적 취향 조정값 계산 (자유로운 변화 허용)
         """
 
-        # 예상 점수 계산
-        expected_score = TasteAnalysisService._calculate_expected_score(
+        # 1. 개선된 예상 점수 계산
+        expected_score = TasteAnalysisService._calculate_improved_expected_score(
             current_preference, drink_characteristic
         )
 
-        # 실제 vs 예상 차이
+        # 2. 실제 vs 예상 차이 (정규화)
         feedback_difference = user_feedback_score - expected_score
+        normalized_difference = feedback_difference / 5.0
 
-        # 기본 조정: 피드백 차이에 비례
-        base_adjustment = feedback_difference * 0.1
+        # 3. 제품 특성 신뢰도
+        characteristic_confidence = TasteAnalysisService._calculate_characteristic_confidence(drink_characteristic)
 
-        # 평점에 따른 조정 강도
-        if rating <= 2:
-            # 낮은 평점: 부정적 경험을 강하게 반영
-            rating_multiplier = 1.5
-        elif rating >= 4:
-            # 높은 평점: 긍정적 경험을 적당히 반영
-            rating_multiplier = 1.2
+        # 4. 진화적 안정성 팩터 (기존보다 훨씬 관대)
+        evolution_factor = TasteAnalysisService._calculate_evolution_factor(
+            current_preference, anchor_preference, review_count
+        )
+
+        # 5. 방향성 조정
+        direction_factor = TasteAnalysisService._calculate_direction_factor(
+            current_preference, drink_characteristic, user_feedback_score, rating
+        )
+
+        # 6. 최종 조정값 계산
+        base_adjustment = normalized_difference * learning_rate["final_rate"]
+
+        adjustment = (
+            base_adjustment
+            * characteristic_confidence
+            * evolution_factor  # 기존 deviation_penalty 대신
+            * direction_factor
+        )
+
+        # 7. 진화적 최대 조정값 (더 관대하게)
+        if review_count < 5:
+            max_adjustment = 0.8  # 초기에는 매우 자유롭게
+        elif review_count < 15:
+            max_adjustment = 0.6  # 중기에도 관대하게
         else:
-            # 보통 평점: 표준 반영
-            rating_multiplier = 1.0
+            max_adjustment = 0.4  # 후기에도 기존보다 관대
 
-        # 제품 특성의 극단성을 고려
-        # 극단적인 제품(0.5 이하 또는 4.5 이상)에서의 피드백은 더 신뢰할 만함
-        extremeness_bonus = 0.0
-        if drink_characteristic <= 0.5 or drink_characteristic >= 4.5:
-            extremeness_bonus = 0.2
-        elif drink_characteristic <= 1.0 or drink_characteristic >= 4.0:
-            extremeness_bonus = 0.1
+        return max(-max_adjustment, min(max_adjustment, adjustment))
 
-        # 기본 취향으로부터의 이탈 정도
-        # 기본 취향에서 너무 멀어지면 조정 강도를 줄임 (안정성)
-        deviation_from_base = abs(current_preference - base_preference)
-        if deviation_from_base > 2.0:
-            # 기본 취향에서 많이 벗어났으면 급격한 변화 제한
-            stability_factor = 0.5
-        elif deviation_from_base > 1.0:
-            stability_factor = 0.8
+    @staticmethod
+    def _calculate_evolution_factor(current_preference: float, anchor_preference: float, review_count: int) -> float:
+        """
+        진화 팩터 계산 (기본값 의존도를 점진적으로 감소)
+        """
+        deviation = abs(current_preference - anchor_preference)
+
+        # 리뷰 수에 따른 자유도 증가
+        freedom_level = min(1.0, review_count / 20.0)  # 20개 리뷰 후 완전 자유
+
+        # 기본 제약 (매우 관대)
+        if deviation > 3.0:  # 기존 2.5 → 3.0
+            base_constraint = 0.6  # 기존 0.3 → 0.6
+        elif deviation > 2.0:  # 기존 1.5 → 2.0
+            base_constraint = 0.8  # 기존 0.6 → 0.8
         else:
-            stability_factor = 1.0
+            base_constraint = 1.0
 
-        # 최종 조정값 계산
-        adjustment = (base_adjustment * rating_multiplier *
-                      (1.0 + extremeness_bonus) * stability_factor * weights['final_weight'])
+        # 자유도 적용 (리뷰가 많을수록 제약 완화)
+        final_factor = base_constraint + (1.0 - base_constraint) * freedom_level
 
-        # 조정값 제한 (한 번에 너무 크게 변하지 않도록)
-        max_adjustment = 0.3
-        adjustment = max(-max_adjustment, min(max_adjustment, adjustment))
+        return final_factor
 
-        return adjustment
+    @staticmethod
+    def _calculate_improved_expected_score(user_preference: float, drink_characteristic: float) -> float:
+        """개선된 예상 점수 계산"""
+        # 기존과 동일
+        linear_component = (user_preference / 5.0) * drink_characteristic
+
+        if user_preference >= 4.0 and drink_characteristic >= 4.0:
+            synergy_bonus = 0.5
+        elif user_preference <= 2.0 and drink_characteristic >= 4.0:
+            synergy_bonus = -1.0
+        elif user_preference >= 4.0 and drink_characteristic <= 2.0:
+            synergy_bonus = -0.5
+        else:
+            synergy_bonus = 0.0
+
+        expected = linear_component + synergy_bonus
+        return max(0.0, min(5.0, expected))
+
+    @staticmethod
+    def _calculate_characteristic_confidence(drink_characteristic: float) -> float:
+        """제품 특성 신뢰도 계산"""
+        # 기존과 동일
+        distance_from_center = abs(drink_characteristic - 2.5)
+
+        if distance_from_center >= 2.0:
+            return 1.3
+        elif distance_from_center >= 1.5:
+            return 1.1
+        else:
+            return 1.0
+
+    @staticmethod
+    def _calculate_direction_factor(
+        current_preference: float, drink_characteristic: float, user_feedback_score: float, rating: int
+    ) -> float:
+        """방향성 조정 팩터"""
+        # 기존과 동일
+        if user_feedback_score >= 4.0:
+            base_direction = 1.2
+        elif user_feedback_score <= 2.0:
+            base_direction = 1.2
+        else:
+            base_direction = 1.0
+
+        expected_rating_from_feedback = user_feedback_score
+        rating_consistency = 1.0 - abs(rating - expected_rating_from_feedback) * 0.1
+
+        return base_direction * max(0.5, rating_consistency)

@@ -225,7 +225,7 @@ class Feedback(models.Model):
             product.save(update_fields=["review_count"])
 
             # 사용자 취향 프로필 업데이트 (새로운 피드백일 때만)
-            if hasattr(self.user, 'taste_profile'):
+            if hasattr(self.user, "taste_profile"):
                 self.user.taste_profile.update_from_review(self)
 
     def delete(self, *args, **kwargs):
