@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 from apps.users.utils.user_manager import UserManager
 from config.settings import base
@@ -103,7 +104,7 @@ class SocialAccount(models.Model):
 
 
 class PreferTasteProfile(models.Model):
-    """사용자 취향 프로필 (리뷰 기반 단순 평균)"""
+    """사용자 취향 프로필 (진화하는 학습 시스템)"""
 
     user = models.OneToOneField(base.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="taste_profile")
 
@@ -154,6 +155,14 @@ class PreferTasteProfile(models.Model):
     # 메타데이터
     total_reviews_count = models.PositiveIntegerField(default=0, help_text="반영된 총 리뷰 수")
 
+    # 재테스트 관련 필드들
+    retake_count = models.PositiveIntegerField(default=0, help_text="재테스트 횟수")
+    last_retake_at = models.DateTimeField(null=True, blank=True, help_text="마지막 재테스트 일시")
+    last_retake_influence = models.DecimalField(
+        max_digits=3, decimal_places=2, null=True, blank=True, help_text="마지막 재테스트 영향률"
+    )
+    retake_base_scores = models.JSONField(null=True, blank=True, help_text="재테스트 기준점 (점진적 적용용)")
+
     # 분석 관련
     analysis_description = models.TextField(blank=True, help_text="취향 분석 설명")
     analysis_updated_at = models.DateTimeField(null=True, blank=True, help_text="분석 마지막 업데이트 시간")
@@ -166,6 +175,7 @@ class PreferTasteProfile(models.Model):
         indexes = [
             models.Index(fields=["user"]),
             models.Index(fields=["last_updated"]),
+            models.Index(fields=["last_retake_at"]),
         ]
 
     def __str__(self):
@@ -181,22 +191,17 @@ class PreferTasteProfile(models.Model):
 
         self.save()
 
-    def update_from_review(self, drink):
-        """리뷰를 바탕으로 취향 점수 업데이트 (단순 평균)"""
-        from decimal import Decimal
+    def update_from_review(self, feedback):
+        """피드백을 바탕으로 취향 점수 업데이트 (진화하는 방식)"""
+        from apps.users.utils.taste_analysis import TasteAnalysisService
 
-        count = self.total_reviews_count
+        TasteAnalysisService.update_taste_profile_from_feedback(self, feedback)
 
-        # 단순 평균 계산
-        self.sweetness_level = (self.sweetness_level * count + drink.sweetness_level) / (count + 1)
-        self.acidity_level = (self.acidity_level * count + drink.acidity_level) / (count + 1)
-        self.body_level = (self.body_level * count + drink.body_level) / (count + 1)
-        self.carbonation_level = (self.carbonation_level * count + drink.carbonation_level) / (count + 1)
-        self.bitterness_level = (self.bitterness_level * count + drink.bitterness_level) / (count + 1)
-        self.aroma_level = (self.aroma_level * count + drink.aroma_level) / (count + 1)
+    def handle_retake(self, new_test_result):
+        """재테스트 처리 (기존 학습 보존하면서 새로운 성향 반영)"""
+        from apps.users.utils.taste_analysis import TasteAnalysisService
 
-        self.total_reviews_count += 1
-        self.save()
+        return TasteAnalysisService.handle_taste_test_retake(self, new_test_result)
 
     def get_taste_scores_dict(self):
         """맛 점수들을 딕셔너리로 반환 (API용)"""
@@ -207,6 +212,17 @@ class PreferTasteProfile(models.Model):
             "carbonation_level": float(self.carbonation_level),
             "bitterness_level": float(self.bitterness_level),
             "aroma_level": float(self.aroma_level),
+        }
+
+    def get_retake_history(self):
+        """재테스트 이력 반환"""
+        return {
+            "retake_count": self.retake_count,
+            "last_retake_at": self.last_retake_at,
+            "last_influence_rate": (
+                f"{int(float(self.last_retake_influence or 0) * 100)}%" if self.last_retake_influence else "0%"
+            ),
+            "has_pending_retake_scores": bool(self.retake_base_scores),
         }
 
     def needs_analysis_update(self):
@@ -225,8 +241,29 @@ class PreferTasteProfile(models.Model):
 
     def update_analysis(self, description):
         """분석 설명 업데이트"""
-        from django.utils import timezone
-
         self.analysis_description = description
         self.analysis_updated_at = timezone.now()
         self.save(update_fields=["analysis_description", "analysis_updated_at"])
+
+    def get_evolution_status(self):
+        """취향 진화 상태 반환"""
+        if self.total_reviews_count < 5:
+            status = "초기 학습"
+            description = "기본 취향을 바탕으로 학습 중"
+        elif self.total_reviews_count < 20:
+            status = "진화 중"
+            description = "개인 취향이 형성되고 있음"
+        else:
+            status = "개인화 완료"
+            description = "고유한 개인 취향 프로필"
+
+        base_influence = max(0.1, 1.0 / (1 + self.total_reviews_count * 0.15))
+        personal_influence = 1.0 - base_influence
+
+        return {
+            "status": status,
+            "description": description,
+            "base_influence_percent": int(base_influence * 100),
+            "personal_influence_percent": int(personal_influence * 100),
+            "reviews_count": self.total_reviews_count,
+        }
