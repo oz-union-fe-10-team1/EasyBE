@@ -1,5 +1,3 @@
-import uuid
-
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -66,9 +64,6 @@ class Order(models.Model):
             self.status = self.Status.CANCELLED
             self.save(update_fields=["status", "updated_at"])
 
-            # 재고 복구
-            for item in self.items.all():
-                item.restore_stock()
             return True
         return False
 
@@ -103,8 +98,6 @@ class OrderItem(models.Model):
     pickup_status = models.BooleanField(default=False, help_text="픽업 완료 여부")
 
     # 선물 관련
-    is_gift = models.BooleanField(default=False, help_text="선물 포장 여부")
-    gift_message = models.TextField(null=True, blank=True, help_text="선물 메시지")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -125,28 +118,6 @@ class OrderItem(models.Model):
     def total_price(self):
         """해당 아이템의 총 가격"""
         return self.price * self.quantity
-
-    def reserve_stock(self):
-        """재고 차감 (주문 시)"""
-        try:
-            stock = self.product.stocks.get(store=self.pickup_store)
-            if stock.reduce_stock(self.quantity):
-                return True
-            else:
-                raise ValueError("재고가 부족합니다")
-        except:
-            raise ValueError("해당 매장에 재고가 없습니다")
-
-    def restore_stock(self):
-        """재고 복구 (주문 취소 시)"""
-        try:
-            stock = self.product.stocks.get(store=self.pickup_store)
-            stock.add_stock(self.quantity)
-        except:
-            # 재고 정보가 없으면 새로 생성
-            from apps.stores.models import ProductStock
-
-            ProductStock.objects.create(product=self.product, store=self.pickup_store, quantity=self.quantity)
 
     def mark_picked_up(self):
         """픽업 완료 처리"""

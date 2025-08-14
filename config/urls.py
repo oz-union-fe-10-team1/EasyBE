@@ -26,6 +26,7 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/v1/", include("apps.orders.urls")),
     # API URL 패턴
     path("api/", include(("apps.users.urls", "users"), namespace="users")),
     path("api/", include(("apps.products.urls", "products"), namespace="api")),
