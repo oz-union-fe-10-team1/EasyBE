@@ -18,9 +18,9 @@ app_name = "users"
 # v1 API 패턴
 v1_patterns = [
     # OAuth 로그인 API
-    path("auth/login/kakao/", KakaoLoginView.as_view(), name="kakao_login"),
-    path("auth/login/naver/", NaverLoginView.as_view(), name="naver_login"),
-    path("auth/login/google/", GoogleLoginView.as_view(), name="google_login"),
+    path("auth/login/kakao", KakaoLoginView.as_view(), name="kakao_login"),
+    path("auth/login/naver", NaverLoginView.as_view(), name="naver_login"),
+    path("auth/login/google", GoogleLoginView.as_view(), name="google_login"),
     path("auth/state", OAuthStateView.as_view(), name="save_oauth_state"),
     # 사용자 취향 프로필 조회 및 수정
     path("user/taste-profile/", TasteProfileView.as_view(), name="taste_profile"),
