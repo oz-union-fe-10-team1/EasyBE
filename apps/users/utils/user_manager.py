@@ -45,7 +45,7 @@ class UserManager(BaseUserManager["User"]):
         """
         소셜 계정으로 사용자 조회
         """
-        from .models import SocialAccount  # 순환 임포트 방지
+        from ..models import SocialAccount  # 순환 임포트 방지
 
         try:
             social_account = SocialAccount.objects.get(provider=provider, provider_id=provider_id)
