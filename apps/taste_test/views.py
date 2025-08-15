@@ -225,7 +225,7 @@ class TasteTypesView(APIView):
         types_data = []
         for type_info in TasteTestData.TYPE_INFO.values():
             type_info_copy = type_info.copy()
-            type_info_copy['image_url'] = TasteTestService.get_image_url_by_enum(type_info['enum'])
+            type_info_copy["image_url"] = TasteTestService.get_image_url_by_enum(type_info["enum"])
             types_data.append(type_info_copy)
 
         return Response({"types": types_data, "total": len(types_data)}, status=status.HTTP_200_OK)

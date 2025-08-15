@@ -216,9 +216,16 @@ class TasteTestData:
     @classmethod
     def get_image_url_by_enum(cls, enum_value: str) -> str:
         """enum 값으로 이미지 URL 조회 (절대 URL 반환)"""
+        # 유효한 enum인지 확인
+        for type_info in cls.TYPE_INFO.values():
+            if type_info["enum"] == enum_value:
+                base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                filename = f"{enum_value.lower()}.png"
+                return f"{base_url}/api/v1/taste-test/images/types/{filename}"
+
+        # 존재하지 않는 enum의 경우 GOURMET 기본값 반환
         base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
-        filename = f"{enum_value.lower()}.png"
-        return f"{base_url}/api/v1/taste-test/images/types/{filename}"
+        return f"{base_url}/api/v1/taste-test/images/types/gourmet.png"
 
 
 class TasteTestService:
@@ -265,7 +272,7 @@ class TasteTestService:
         """한국어 유형명으로 유형 정보 반환 (절대 URL로 변환)"""
         type_info = TasteTestData.TYPE_INFO.get(korean_name, TasteTestData.TYPE_INFO["미식가유형"]).copy()
         # 절대 URL로 변환
-        type_info['image_url'] = TasteTestData.get_image_url_by_enum(type_info['enum'])
+        type_info['image_url'] = TasteTestData.get_image_url_by_enum(str(type_info['enum']))
         return type_info
 
     @staticmethod
@@ -509,4 +516,4 @@ def process_taste_test(answers: Dict[str, str]) -> Dict:
 TASTE_QUESTIONS = TasteTestData.QUESTIONS
 ANSWER_SCORE_MAPPING = TasteTestData.ANSWER_MAPPING
 TASTE_TYPES = TasteTestData.TYPE_INFO
-TASTE_TYPE_IMAGES = {type_info["enum"]: TasteTestData.get_image_url_by_enum(type_info["enum"]) for type_info in TasteTestData.TYPE_INFO.values()}
+TASTE_TYPE_IMAGES = {str(type_info["enum"]): TasteTestData.get_image_url_by_enum(str(type_info["enum"])) for type_info in TasteTestData.TYPE_INFO.values()}
