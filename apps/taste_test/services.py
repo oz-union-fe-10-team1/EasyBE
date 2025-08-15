@@ -74,7 +74,7 @@ class TasteTestData:
         "상큼톡톡파": {
             "name": "상큼톡톡파",
             "enum": "FRESH_FIZZY",
-            "description": "당신은 평범한 걸 거부한다!\n입맛을 깨우는 새콤함과 톡 쏘는 청량감에서 즐거움을 느끼는,\n활기 넘치는 타입입니다. 세련된 취향을 가졌네요.",
+            "description": "당신은 평범한 걸 거부한다! 입맛을 깨우는\n새콤함과 톡 쏘는 청량감에서 즐거움을 느끼는,\n활기 넘치는 타입입니다. 세련된 취향을 가졌네요.",
             "characteristics": ["상큼함", "톡톡함", "경쾌함", "청량감"],
         },
         "묵직여운파": {
@@ -86,19 +86,19 @@ class TasteTestData:
         "깔끔고소파": {
             "name": "깔끔고소파",
             "enum": "CLEAN_SAVORY",
-            "description": "당신은 인위적인 맛보다는, 재료 본연의 깔끔하고 담백한 맛을 즐길 줄 아는 미식가시네요!\n쌀이나 곡물이 주는 은은한 고소함과\n군더더기 없는 마무리를 좋아합니다.",
+            "description": "당신은 인위적인 맛보다는, 재료 본연의 깔끔하고\n담백한 맛을 즐길 줄 아는 미식가시네요! 쌀이나 곡물이 주는\n은은한 고소함과 군더더기 없는 마무리를 좋아합니다.",
             "characteristics": ["깔끔함", "고소함", "담백함", "자연스러움"],
         },
         "향긋단정파": {
             "name": "향긋단정파",
             "enum": "FRAGRANT_NEAT",
-            "description": "강렬한 맛보다는 은은하게 피어오르는 꽃이나 과일 향기,\n그리고 부드러운 목넘김을 즐기는\n섬세한 타입입니다.",
+            "description": "강렬한 맛보다는 은은하게 피어오르는 꽃이나\n과일 향기, 그리고 부드러운 목넘김을 즐기는\n섬세한 타입입니다.",
             "characteristics": ["향긋함", "단정함", "섬세함", "우아함"],
         },
         "상큼깔끔파": {
             "name": "상큼깔끔파",
             "enum": "FRESH_CLEAN",
-            "description": "상큼한 첫맛으로 입맛을 돋우되,\n끝맛은 군더더기 없이 깔끔하게 떨어지는 맛을 즐기는 당신!\n세련된 취향을 가졌네요.",
+            "description": "상큼한 첫맛으로 입맛을 돋우되, 끝맛은 군더더기 없이\n깔끔하게 떨어지는 맛을 즐기는 당신!\n세련된 취향을 가졌네요.",
             "characteristics": ["상큼함", "깔끔함", "세련됨", "균형감"],
         },
         "묵직달콤파": {
@@ -110,13 +110,13 @@ class TasteTestData:
         "달콤고소파": {
             "name": "달콤고소파",
             "enum": "SWEET_SAVORY",
-            "description": "달콤하지만 끝은 구수한, 밸런스 좋은 맛을 선호하는 당신!\n부드러운 첫인상과 담백한 마무리를\n모두 중요하게 생각하는군요.",
+            "description": "달콤하지만 끝은 구수한, 밸런스 좋은 맛을\n 선호하는 당신! 부드러운 첫인상과\n담백한 마무리를모두 중요하게 생각하는군요.",
             "characteristics": ["달콤함", "고소함", "균형", "조화"],
         },
         "미식가유형": {
             "name": "미식가유형",
             "enum": "GOURMET",
-            "description": "상황에 따라 다양한 술의 매력을 즐길 줄 아는 술 애호가입니다.\n새로운 술을 시도하는 데도 주저하지 않으며,\n어떤 술이든 그 자체의 맛을 음미할 줄 아는 폭넓은 스펙트럼의 균형 잡힌 미식가입니다.",
+            "description": "상황에 따라 다양한 술의 매력을 즐길 줄 알고, 새로운 술을\n시도하는 데도 주저함이 없군요. 어떤 술이든 그 자체의 맛을\n음미할 줄 아는, 폭넓은 스펙트럼의 균형잡힌 미식가 입니다.",
             "characteristics": ["다양성", "개방성", "균형감", "미식가적"],
         },
     }
@@ -221,11 +221,11 @@ class TasteTestData:
             if type_info["enum"] == enum_value:
                 base_url = getattr(settings, "BASE_URL", "http://localhost:8000")
                 filename = f"{enum_value.lower()}.png"
-                return f"{base_url}/api/v1/taste-test/images/types/{filename}"
+                return f"{base_url}/api/taste-test/images/types/{filename}"
 
         # 존재하지 않는 enum의 경우 GOURMET 기본값 반환
         base_url = getattr(settings, "BASE_URL", "http://localhost:8000")
-        return f"{base_url}/api/v1/taste-test/images/types/gourmet.png"
+        return f"{base_url}/api/taste-test/images/types/gourmet.png"
 
 
 class TasteTestService:

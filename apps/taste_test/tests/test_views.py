@@ -48,7 +48,7 @@ class TasteTestAPITest(APITestCase):
         image_url = response.data["info"]["image_url"]
         self.assertTrue(image_url.startswith(("http://", "https://")))
         self.assertTrue(image_url.endswith(".png"))
-        self.assertIn("/api/v1/taste-test/images/types/", image_url)
+        self.assertIn("/api/taste-test/images/types/", image_url)
         self.assertTrue(response.data["saved"])  # 로그인한 상태이므로 저장됨
 
     def test_submit_answers_without_auth(self):
@@ -125,7 +125,7 @@ class TasteTestAPITest(APITestCase):
             image_url = taste_type["image_url"]
             self.assertTrue(image_url.startswith(("http://", "https://")))
             self.assertTrue(image_url.endswith(".png"))
-            self.assertIn("/api/v1/taste-test/images/types/", image_url)
+            self.assertIn("/api/taste-test/images/types/", image_url)
 
     def test_retake_success(self):
         """재테스트 성공"""

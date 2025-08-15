@@ -137,7 +137,7 @@ class TasteTestServiceTest(TestCase):
                 # 절대 URL 형식인지 확인
                 self.assertTrue(image_url.startswith(("http://", "https://")))
                 # 올바른 경로와 파일명 확인
-                expected_path = f"/api/v1/taste-test/images/types/{enum_type.lower()}.png"
+                expected_path = f"/api/taste-test/images/types/{enum_type.lower()}.png"
                 self.assertTrue(image_url.endswith(expected_path))
 
     def test_get_image_url_by_enum_invalid(self):
@@ -717,5 +717,5 @@ class TasteTestServiceIntegrationWithImageTest(TestCase):
                 self.assertTrue(image_url.endswith(expected_filename))
 
                 # 경로 형식 확인
-                expected_path = f"/api/v1/taste-test/images/types/{expected_filename}"
+                expected_path = f"/api/taste-test/images/types/{expected_filename}"
                 self.assertTrue(image_url.endswith(expected_path))
