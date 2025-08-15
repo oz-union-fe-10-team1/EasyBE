@@ -16,6 +16,9 @@ sentry_sdk.init(
 DEBUG = False
 ALLOWED_HOSTS = [host.strip() for host in os.environ.get("ALLOWED_HOSTS", "").split(",") if host.strip()]
 
+# 프로덕션 BASE_URL 설정 추가
+BASE_URL = "https://hanjantest.store"
+
 DATABASES: Dict[str, Dict[str, Any]] = {  # type: ignore[no-redef]
     "default": {
         "ENGINE": "django.db.backends.postgresql",

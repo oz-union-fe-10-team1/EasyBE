@@ -5,6 +5,7 @@
 from decimal import Decimal
 from typing import Dict, List, Optional
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 
 from .models import PreferenceTestResult
@@ -67,65 +68,56 @@ class TasteTestData:
         "달콤과일파": {
             "name": "달콤과일파",
             "enum": "SWEET_FRUIT",
-            "description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요! 쓴맛이나 강한 신맛보다는, 입안 가득 퍼지는 과일의 향기와 기분 좋은 달콤함을 즐기는 타입입니다.",
+            "description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!\n쓴맛이나 강한 신맛보다는, 입안 가득 퍼지는 과일의 향기와\n기분 좋은 달콤함을 즐기는 타입입니다.",
             "characteristics": ["달콤함", "과일향", "로맨틱", "부드러움"],
-            "image_url": "images/types/sweet_fruit.png",
         },
         "상큼톡톡파": {
             "name": "상큼톡톡파",
             "enum": "FRESH_FIZZY",
-            "description": "당신은 평범한 걸 거부한다! 입맛을 깨우는 새콤함과 톡 쏘는 청량감에서 즐거움을 느끼는, 활기 넘치는 타입입니다. 세련된 취향을 가졌네요.",
+            "description": "당신은 평범한 걸 거부한다!\n입맛을 깨우는 새콤함과 톡 쏘는 청량감에서 즐거움을 느끼는,\n활기 넘치는 타입입니다. 세련된 취향을 가졌네요.",
             "characteristics": ["상큼함", "톡톡함", "경쾌함", "청량감"],
-            "image_url": "images/types/fresh_fizzy.png",
         },
         "묵직여운파": {
             "name": "묵직여운파",
             "enum": "HEAVY_LINGERING",
-            "description": "당신은 '술은 술다워야지' 라고 생각하는군요. 알코올의 존재감이 느껴지는, 진하고 깊은 풍미와 묵직한 여운을 즐기는 타입입니다.",
+            "description": "당신은 '술은 술다워야지' 라고 생각하는군요.\n알코올의 존재감이 느껴지는, 진하고 깊은 풍미와\n묵직한 여운을 즐기는 타입입니다.",
             "characteristics": ["묵직함", "진한맛", "여운", "존재감"],
-            "image_url": "images/types/heavy_lingering.png",
         },
         "깔끔고소파": {
             "name": "깔끔고소파",
             "enum": "CLEAN_SAVORY",
-            "description": "당신은 인위적인 맛보다는, 재료 본연의 깔끔하고 담백한 맛을 즐길 줄 아는 미식가시네요! 쌀이나 곡물이 주는 은은한 고소함과 군더더기 없는 마무리를 좋아합니다.",
+            "description": "당신은 인위적인 맛보다는, 재료 본연의 깔끔하고 담백한 맛을 즐길 줄 아는 미식가시네요!\n쌀이나 곡물이 주는 은은한 고소함과\n군더더기 없는 마무리를 좋아합니다.",
             "characteristics": ["깔끔함", "고소함", "담백함", "자연스러움"],
-            "image_url": "images/types/clean_savory.png",
         },
         "향긋단정파": {
             "name": "향긋단정파",
             "enum": "FRAGRANT_NEAT",
-            "description": "강렬한 맛보다는 은은하게 피어오르는 꽃이나 과일 향기, 그리고 부드러운 목넘김을 즐기는 섬세한 타입입니다.",
+            "description": "강렬한 맛보다는 은은하게 피어오르는 꽃이나 과일 향기,\n그리고 부드러운 목넘김을 즐기는\n섬세한 타입입니다.",
             "characteristics": ["향긋함", "단정함", "섬세함", "우아함"],
-            "image_url": "images/types/fragrant_neat.png",
         },
         "상큼깔끔파": {
             "name": "상큼깔끔파",
             "enum": "FRESH_CLEAN",
-            "description": "상큼한 첫맛으로 입맛을 돋우되, 끝맛은 군더더기 없이 깔끔하게 떨어지는 맛을 즐기는 당신! 세련된 취향을 가졌네요.",
+            "description": "상큼한 첫맛으로 입맛을 돋우되,\n끝맛은 군더더기 없이 깔끔하게 떨어지는 맛을 즐기는 당신!\n세련된 취향을 가졌네요.",
             "characteristics": ["상큼함", "깔끔함", "세련됨", "균형감"],
-            "image_url": "images/types/fresh_clean.png",
         },
         "묵직달콤파": {
             "name": "묵직달콤파",
             "enum": "HEAVY_SWEET",
-            "description": "입안을 꽉 채우는 진한 질감과 함께 오는 기분 좋은 달콤함을 선호하는 당신! 디저트 와인처럼 풍성한 맛을 즐기는군요.",
+            "description": "입안을 꽉 채우는 진한 질감과 함께 오는\n기분 좋은 달콤함을 선호하는 당신!\n디저트 와인처럼 풍성한 맛을 즐기는군요.",
             "characteristics": ["묵직함", "달콤함", "풍성함", "진한맛"],
-            "image_url": "images/types/heavy_sweet.png",
         },
         "달콤고소파": {
             "name": "달콤고소파",
             "enum": "SWEET_SAVORY",
-            "description": "달콤하지만 끝은 구수한, 밸런스 좋은 맛을 선호하는 당신! 부드러운 첫인상과 담백한 마무리를 모두 중요하게 생각하는군요.",
+            "description": "달콤하지만 끝은 구수한, 밸런스 좋은 맛을 선호하는 당신!\n부드러운 첫인상과 담백한 마무리를\n모두 중요하게 생각하는군요.",
             "characteristics": ["달콤함", "고소함", "균형", "조화"],
-            "image_url": "images/types/sweet_savory.png",
         },
         "미식가유형": {
             "name": "미식가유형",
             "enum": "GOURMET",
-            "description": "상황에 따라 다양한 술의 매력을 즐길 줄 아는 술 애호가입니다. 새로운 술을 시도하는 데도 주저하지 않으며, 어떤 술이든 그 자체의 맛을 음미할 줄 아는 폭넓은 스펙트럼의 균형 잡힌 미식가입니다.",
+            "description": "상황에 따라 다양한 술의 매력을 즐길 줄 아는 술 애호가입니다.\n새로운 술을 시도하는 데도 주저하지 않으며,\n어떤 술이든 그 자체의 맛을 음미할 줄 아는 폭넓은 스펙트럼의 균형 잡힌 미식가입니다.",
             "characteristics": ["다양성", "개방성", "균형감", "미식가적"],
-            "image_url": "images/types/gourmet.png",
         },
     }
 
@@ -223,11 +215,17 @@ class TasteTestData:
 
     @classmethod
     def get_image_url_by_enum(cls, enum_value: str) -> str:
-        """enum 값으로 이미지 URL 조회"""
+        """enum 값으로 이미지 URL 조회 (절대 URL 반환)"""
+        # 유효한 enum인지 확인
         for type_info in cls.TYPE_INFO.values():
             if type_info["enum"] == enum_value:
-                return str(type_info["image_url"])
-        return str(cls.TYPE_INFO["미식가유형"]["image_url"])
+                base_url = getattr(settings, "BASE_URL", "http://localhost:8000")
+                filename = f"{enum_value.lower()}.png"
+                return f"{base_url}/api/v1/taste-test/images/types/{filename}"
+
+        # 존재하지 않는 enum의 경우 GOURMET 기본값 반환
+        base_url = getattr(settings, "BASE_URL", "http://localhost:8000")
+        return f"{base_url}/api/v1/taste-test/images/types/gourmet.png"
 
 
 class TasteTestService:
@@ -271,20 +269,27 @@ class TasteTestService:
 
     @staticmethod
     def get_type_info(korean_name: str) -> Dict:
-        """한국어 유형명으로 유형 정보 반환"""
-        return TasteTestData.TYPE_INFO.get(korean_name, TasteTestData.TYPE_INFO["미식가유형"])
+        """한국어 유형명으로 유형 정보 반환 (절대 URL로 변환)"""
+        type_info = TasteTestData.TYPE_INFO.get(korean_name, TasteTestData.TYPE_INFO["미식가유형"]).copy()
+        # 절대 URL로 변환
+        type_info["image_url"] = TasteTestData.get_image_url_by_enum(str(type_info["enum"]))
+        return type_info
 
     @staticmethod
     def get_type_info_by_enum(enum_value: str) -> Dict:
-        """enum 값으로 유형 정보 반환"""
+        """enum 값으로 유형 정보 반환 (절대 URL로 변환)"""
         for type_info in TasteTestData.TYPE_INFO.values():
             if type_info["enum"] == enum_value:
-                return type_info
-        return TasteTestData.TYPE_INFO["미식가유형"]
+                result = type_info.copy()
+                result["image_url"] = TasteTestData.get_image_url_by_enum(enum_value)
+                return result
+        result = TasteTestData.TYPE_INFO["미식가유형"].copy()
+        result["image_url"] = TasteTestData.get_image_url_by_enum("GOURMET")
+        return result
 
     @staticmethod
     def get_image_url_by_enum(enum_value: str) -> str:
-        """enum 값으로 이미지 URL 반환"""
+        """enum 값으로 이미지 URL 반환 (절대 URL)"""
         return TasteTestData.get_image_url_by_enum(enum_value)
 
     @staticmethod
@@ -511,4 +516,7 @@ def process_taste_test(answers: Dict[str, str]) -> Dict:
 TASTE_QUESTIONS = TasteTestData.QUESTIONS
 ANSWER_SCORE_MAPPING = TasteTestData.ANSWER_MAPPING
 TASTE_TYPES = TasteTestData.TYPE_INFO
-TASTE_TYPE_IMAGES = {type_info["enum"]: type_info["image_url"] for type_info in TasteTestData.TYPE_INFO.values()}
+TASTE_TYPE_IMAGES = {
+    str(type_info["enum"]): TasteTestData.get_image_url_by_enum(str(type_info["enum"]))
+    for type_info in TasteTestData.TYPE_INFO.values()
+}

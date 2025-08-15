@@ -112,28 +112,33 @@ class TasteTestServiceTest(TestCase):
         self.assertEqual(result["scores"]["달콤과일파"], 3)
         self.assertEqual(result["info"]["name"], "달콤과일파")
 
-        # 이미지 URL 포함 확인
-        self.assertIn("image_url", result["info"])
-        self.assertEqual(result["info"]["image_url"], "images/types/sweet_fruit.png")
+        # 이미지 URL이 서비스 메서드와 일치하는지 확인
+        expected_url = TasteTestService.get_image_url_by_enum("SWEET_FRUIT")
+        self.assertEqual(result["info"]["image_url"], expected_url)
 
     def test_get_image_url_by_enum(self):
         """enum으로 이미지 URL 가져오기 테스트"""
         test_cases = [
-            ("SWEET_FRUIT", "images/types/sweet_fruit.png"),
-            ("FRESH_FIZZY", "images/types/fresh_fizzy.png"),
-            ("HEAVY_LINGERING", "images/types/heavy_lingering.png"),
-            ("CLEAN_SAVORY", "images/types/clean_savory.png"),
-            ("FRAGRANT_NEAT", "images/types/fragrant_neat.png"),
-            ("FRESH_CLEAN", "images/types/fresh_clean.png"),
-            ("HEAVY_SWEET", "images/types/heavy_sweet.png"),
-            ("SWEET_SAVORY", "images/types/sweet_savory.png"),
-            ("GOURMET", "images/types/gourmet.png"),
+            "SWEET_FRUIT",
+            "FRESH_FIZZY",
+            "HEAVY_LINGERING",
+            "CLEAN_SAVORY",
+            "FRAGRANT_NEAT",
+            "FRESH_CLEAN",
+            "HEAVY_SWEET",
+            "SWEET_SAVORY",
+            "GOURMET",
         ]
 
-        for enum_type, expected_url in test_cases:
+        for enum_type in test_cases:
             with self.subTest(enum_type=enum_type):
                 image_url = TasteTestService.get_image_url_by_enum(enum_type)
-                self.assertEqual(image_url, expected_url)
+
+                # 절대 URL 형식인지 확인
+                self.assertTrue(image_url.startswith(("http://", "https://")))
+                # 올바른 경로와 파일명 확인
+                expected_path = f"/api/v1/taste-test/images/types/{enum_type.lower()}.png"
+                self.assertTrue(image_url.endswith(expected_path))
 
     def test_get_image_url_by_enum_invalid(self):
         """존재하지 않는 enum으로 이미지 URL 가져오기"""
@@ -141,7 +146,7 @@ class TasteTestServiceTest(TestCase):
         image_url = TasteTestService.get_image_url_by_enum(invalid_enum)
 
         # GOURMET 기본값이 반환되어야 함
-        expected_default = TASTE_TYPE_IMAGES["GOURMET"]
+        expected_default = TasteTestService.get_image_url_by_enum("GOURMET")
         self.assertEqual(image_url, expected_default)
 
     def test_taste_types_have_image_urls(self):
@@ -150,9 +155,14 @@ class TasteTestServiceTest(TestCase):
 
         for type_name, type_info in TASTE_TYPES.items():
             with self.subTest(type_name=type_name):
-                self.assertIn("image_url", type_info)
-                self.assertTrue(type_info["image_url"].startswith("images/types/"))
-                self.assertTrue(type_info["image_url"].endswith(".png"))
+                # get_type_info 메서드를 통해 실제 URL 확인
+                actual_type_info = TasteTestService.get_type_info(type_name)
+                self.assertIn("image_url", actual_type_info)
+
+                # 절대 URL 형식인지 확인
+                image_url = actual_type_info["image_url"]
+                self.assertTrue(image_url.startswith(("http://", "https://")))
+                self.assertTrue(image_url.endswith(".png"))
 
     def test_enum_image_mapping_consistency(self):
         """enum과 이미지 매핑 일관성 테스트"""
@@ -162,12 +172,9 @@ class TasteTestServiceTest(TestCase):
             with self.subTest(type_name=type_name):
                 enum_value = type_info["enum"]
 
-                # TASTE_TYPE_IMAGES에 해당 enum이 있는지 확인
-                self.assertIn(enum_value, TASTE_TYPE_IMAGES)
-
-                # 두 매핑이 일치하는지 확인
-                direct_image_url = TASTE_TYPE_IMAGES[enum_value]
-                type_info_image_url = type_info["image_url"]
+                # 서비스 메서드로 얻은 URL들이 일치하는지 확인
+                direct_image_url = TasteTestService.get_image_url_by_enum(enum_value)
+                type_info_image_url = TasteTestService.get_type_info(type_name)["image_url"]
                 self.assertEqual(direct_image_url, type_info_image_url)
 
     def test_save_test_result_sweet_fruit_type(self):
@@ -316,21 +323,26 @@ class TasteTestServiceImageTest(TestCase):
     def test_get_image_url_by_enum_all_types(self):
         """모든 enum 타입별 이미지 URL 테스트"""
         test_cases = [
-            ("SWEET_FRUIT", "images/types/sweet_fruit.png"),
-            ("FRESH_FIZZY", "images/types/fresh_fizzy.png"),
-            ("HEAVY_LINGERING", "images/types/heavy_lingering.png"),
-            ("CLEAN_SAVORY", "images/types/clean_savory.png"),
-            ("FRAGRANT_NEAT", "images/types/fragrant_neat.png"),
-            ("FRESH_CLEAN", "images/types/fresh_clean.png"),
-            ("HEAVY_SWEET", "images/types/heavy_sweet.png"),
-            ("SWEET_SAVORY", "images/types/sweet_savory.png"),
-            ("GOURMET", "images/types/gourmet.png"),
+            "SWEET_FRUIT",
+            "FRESH_FIZZY",
+            "HEAVY_LINGERING",
+            "CLEAN_SAVORY",
+            "FRAGRANT_NEAT",
+            "FRESH_CLEAN",
+            "HEAVY_SWEET",
+            "SWEET_SAVORY",
+            "GOURMET",
         ]
 
-        for enum_type, expected_url in test_cases:
+        for enum_type in test_cases:
             with self.subTest(enum_type=enum_type):
                 image_url = TasteTestService.get_image_url_by_enum(enum_type)
-                self.assertEqual(image_url, expected_url)
+
+                # 절대 URL 형식 확인
+                self.assertTrue(image_url.startswith(("http://", "https://")))
+                # 파일명 확인
+                expected_filename = f"{enum_type.lower()}.png"
+                self.assertTrue(image_url.endswith(expected_filename))
 
     def test_get_image_url_by_enum_invalid(self):
         """존재하지 않는 enum으로 이미지 URL 가져오기"""
@@ -338,18 +350,21 @@ class TasteTestServiceImageTest(TestCase):
         image_url = TasteTestService.get_image_url_by_enum(invalid_enum)
 
         # GOURMET 기본값이 반환되어야 함
-        expected_default = TASTE_TYPE_IMAGES["GOURMET"]
+        expected_default = TasteTestService.get_image_url_by_enum("GOURMET")
         self.assertEqual(image_url, expected_default)
 
     def test_taste_types_have_image_urls(self):
         """모든 TASTE_TYPES에 image_url이 포함되어 있는지 테스트"""
         from ..services import TASTE_TYPES
 
-        for type_name, type_info in TASTE_TYPES.items():
+        for type_name in TASTE_TYPES.keys():
             with self.subTest(type_name=type_name):
+                type_info = TasteTestService.get_type_info(type_name)
                 self.assertIn("image_url", type_info)
-                self.assertTrue(type_info["image_url"].startswith("images/types/"))
-                self.assertTrue(type_info["image_url"].endswith(".png"))
+
+                image_url = type_info["image_url"]
+                self.assertTrue(image_url.startswith(("http://", "https://")))
+                self.assertTrue(image_url.endswith(".png"))
 
     def test_enum_image_mapping_consistency(self):
         """enum과 이미지 매핑 일관성 테스트"""
@@ -359,12 +374,9 @@ class TasteTestServiceImageTest(TestCase):
             with self.subTest(type_name=type_name):
                 enum_value = type_info["enum"]
 
-                # TASTE_TYPE_IMAGES에 해당 enum이 있는지 확인
-                self.assertIn(enum_value, TASTE_TYPE_IMAGES)
-
-                # 두 매핑이 일치하는지 확인
-                direct_image_url = TASTE_TYPE_IMAGES[enum_value]
-                type_info_image_url = type_info["image_url"]
+                # 두 메서드가 동일한 URL을 반환하는지 확인
+                direct_image_url = TasteTestService.get_image_url_by_enum(enum_value)
+                type_info_image_url = TasteTestService.get_type_info(type_name)["image_url"]
                 self.assertEqual(direct_image_url, type_info_image_url)
 
     def test_get_type_info_includes_image(self):
@@ -372,7 +384,10 @@ class TasteTestServiceImageTest(TestCase):
         type_info = TasteTestService.get_type_info("달콤과일파")
 
         self.assertIn("image_url", type_info)
-        self.assertEqual(type_info["image_url"], "images/types/sweet_fruit.png")
+        # 서비스 메서드와 일치하는지 확인
+        expected_url = TasteTestService.get_image_url_by_enum("SWEET_FRUIT")
+        self.assertEqual(type_info["image_url"], expected_url)
+
         self.assertEqual(type_info["name"], "달콤과일파")
         self.assertEqual(type_info["enum"], "SWEET_FRUIT")
 
@@ -510,8 +525,9 @@ class TasteTestServiceEdgeCaseTest(TestCase):
         # A 선택 시: 달콤과일파 2점, 상큼톡톡파 3점, 깔끔고소파 1점 → 상큼톡톡파 (단일)
         self.assertEqual(result["type"], "상큼톡톡파")
         self.assertEqual(result["scores"]["상큼톡톡파"], 3)
-        # 이미지 정보 확인
-        self.assertEqual(result["info"]["image_url"], "images/types/fresh_fizzy.png")
+        # 이미지 정보 확인 - 서비스 메서드와 일치
+        expected_url = TasteTestService.get_image_url_by_enum("FRESH_FIZZY")
+        self.assertEqual(result["info"]["image_url"], expected_url)
 
     def test_all_same_answer_b(self):
         """모든 답변이 B인 경우 (새로운 매핑)"""
@@ -522,8 +538,9 @@ class TasteTestServiceEdgeCaseTest(TestCase):
         # B 선택 시: 깔끔고소파 2점, 묵직여운파 3점, 달콤과일파 1점 → 묵직여운파 (단일)
         self.assertEqual(result["type"], "묵직여운파")
         self.assertEqual(result["scores"]["묵직여운파"], 3)
-        # 이미지 정보 확인
-        self.assertEqual(result["info"]["image_url"], "images/types/heavy_lingering.png")
+        # 이미지 정보 확인 - 서비스 메서드와 일치
+        expected_url = TasteTestService.get_image_url_by_enum("HEAVY_LINGERING")
+        self.assertEqual(result["info"]["image_url"], expected_url)
 
     def test_partial_answers(self):
         """일부 답변만 있는 경우"""
@@ -546,7 +563,9 @@ class TasteTestServiceEdgeCaseTest(TestCase):
 
         # 모든 점수가 0이므로 미식가유형이어야 함
         self.assertEqual(result["type"], "미식가유형")
-        self.assertEqual(result["info"]["image_url"], "images/types/gourmet.png")
+        # 이미지 정보 확인 - 서비스 메서드와 일치
+        expected_url = TasteTestService.get_image_url_by_enum("GOURMET")
+        self.assertEqual(result["info"]["image_url"], expected_url)
         total_score = sum(result["scores"].values())
         self.assertEqual(total_score, 0)
 
@@ -606,25 +625,29 @@ class TasteTestServiceEdgeCaseTest(TestCase):
         answers_1 = {"Q1": "A", "Q2": "A", "Q3": "A", "Q4": "B", "Q5": "B", "Q6": "B"}
         result_1 = TasteTestService.process_taste_test(answers_1)
         self.assertEqual(result_1["type"], "상큼깔끔파")
-        self.assertEqual(result_1["info"]["image_url"], "images/types/fresh_clean.png")
+        expected_url_1 = TasteTestService.get_image_url_by_enum("FRESH_CLEAN")
+        self.assertEqual(result_1["info"]["image_url"], expected_url_1)
 
         # 시나리오 2: 묵직달콤파 (달콤과일파 + 묵직여운파)
         answers_2 = {"Q1": "A", "Q2": "A", "Q3": "B", "Q4": "B", "Q5": "B", "Q6": "A"}
         result_2 = TasteTestService.process_taste_test(answers_2)
         self.assertEqual(result_2["type"], "묵직달콤파")
-        self.assertEqual(result_2["info"]["image_url"], "images/types/heavy_sweet.png")
+        expected_url_2 = TasteTestService.get_image_url_by_enum("HEAVY_SWEET")
+        self.assertEqual(result_2["info"]["image_url"], expected_url_2)
 
         # 시나리오 3: 달콤고소파 (달콤과일파 + 깔끔고소파)
         answers_3 = {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}
         result_3 = TasteTestService.process_taste_test(answers_3)
         self.assertEqual(result_3["type"], "달콤고소파")
-        self.assertEqual(result_3["info"]["image_url"], "images/types/sweet_savory.png")
+        expected_url_3 = TasteTestService.get_image_url_by_enum("SWEET_SAVORY")
+        self.assertEqual(result_3["info"]["image_url"], expected_url_3)
 
         # 시나리오 4: 상큼톡톡파 단일 유형
         answers_4 = {"Q1": "B", "Q2": "A", "Q3": "A", "Q4": "A", "Q5": "A", "Q6": "B"}
         result_4 = TasteTestService.process_taste_test(answers_4)
         self.assertEqual(result_4["type"], "상큼톡톡파")  # 3점 단일 유형
-        self.assertEqual(result_4["info"]["image_url"], "images/types/fresh_fizzy.png")
+        expected_url_4 = TasteTestService.get_image_url_by_enum("FRESH_FIZZY")
+        self.assertEqual(result_4["info"]["image_url"], expected_url_4)
 
 
 class TasteTestServiceIntegrationWithImageTest(TestCase):
@@ -646,9 +669,10 @@ class TasteTestServiceIntegrationWithImageTest(TestCase):
         self.assertIn("scores", result)
         self.assertIn("info", result)
 
-        # 3. 이미지 정보 확인
+        # 3. 이미지 정보 확인 - 서비스 메서드와 일치
         self.assertIn("image_url", result["info"])
-        self.assertEqual(result["info"]["image_url"], "images/types/sweet_fruit.png")
+        expected_url = TasteTestService.get_image_url_by_enum("SWEET_FRUIT")
+        self.assertEqual(result["info"]["image_url"], expected_url)
 
         # 4. DB 저장 후 확인
         saved_result = TasteTestService.save_test_result(self.user, answers)
@@ -656,14 +680,15 @@ class TasteTestServiceIntegrationWithImageTest(TestCase):
 
         # 5. 이미지 URL 직접 조회
         image_url = TasteTestService.get_image_url_by_enum(saved_result.prefer_taste)
-        self.assertEqual(image_url, "images/types/sweet_fruit.png")
+        self.assertEqual(image_url, expected_url)
 
     def test_all_types_have_unique_images(self):
         """모든 유형이 고유한 이미지를 가지는지 테스트"""
         from ..services import TASTE_TYPES
 
         image_urls = []
-        for type_name, type_info in TASTE_TYPES.items():
+        for type_name in TASTE_TYPES.keys():
+            type_info = TasteTestService.get_type_info(type_name)
             image_url = type_info["image_url"]
             # 중복 이미지 URL이 없는지 확인
             self.assertNotIn(image_url, image_urls, f"{type_name}의 이미지가 중복됩니다")
@@ -678,13 +703,19 @@ class TasteTestServiceIntegrationWithImageTest(TestCase):
 
         for type_name, type_info in TASTE_TYPES.items():
             with self.subTest(type_name=type_name):
-                image_url = type_info["image_url"]
+                # 서비스 메서드를 통해 실제 URL 가져오기
+                actual_type_info = TasteTestService.get_type_info(type_name)
+                image_url = actual_type_info["image_url"]
 
-                # 경로 형식 확인
-                self.assertTrue(image_url.startswith("images/types/"))
+                # 절대 URL 형식 확인
+                self.assertTrue(image_url.startswith(("http://", "https://")))
                 self.assertTrue(image_url.endswith(".png"))
 
                 # 파일명 형식 확인 (enum을 소문자로 변환한 형태)
                 enum_value = type_info["enum"]
                 expected_filename = enum_value.lower() + ".png"
                 self.assertTrue(image_url.endswith(expected_filename))
+
+                # 경로 형식 확인
+                expected_path = f"/api/v1/taste-test/images/types/{expected_filename}"
+                self.assertTrue(image_url.endswith(expected_path))

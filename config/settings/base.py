@@ -13,6 +13,9 @@ if not SECRET_KEY:
     raise ValueError("DJANGO_SECRET_KEY environment variable not set")
 DEBUG = True
 
+# BASE_URL 설정 추가 (개발환경 기본값)
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+
 # Application definition
 
 DJANGO_APPS = [
