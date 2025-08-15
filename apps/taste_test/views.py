@@ -66,7 +66,7 @@ class TasteTestSubmitView(APIView):
                                 "enum": "SWEET_FRUIT",
                                 "description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!",
                                 "characteristics": ["달콤함", "과일향", "로맨틱", "부드러움"],
-                                "image_url": "images/types/sweet_fruit.png",
+                                "image_url": "http://localhost:8000/images/types/sweet_fruit.png",
                             },
                             "saved": True,
                         },
@@ -165,7 +165,7 @@ class UserProfileView(APIView):
                     "prefer_taste": "SWEET_FRUIT",
                     "prefer_taste_display": "달콤과일파",
                     "taste_description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!",
-                    "image_url": "images/types/sweet_fruit.png",
+                    "image_url": "http://localhost:8000/images/types/sweet_fruit.png",
                     "created_at": "2024-01-01T00:00:00Z",
                 },
             }
@@ -211,7 +211,7 @@ class TasteTypesView(APIView):
                             "enum": "SWEET_FRUIT",
                             "description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!",
                             "characteristics": ["달콤함", "과일향", "로맨틱", "부드러움"],
-                            "image_url": "images/types/sweet_fruit.png",
+                            "image_url": "http://localhost:8000/images/types/sweet_fruit.png",
                         }
                     ],
                     "total": 9,
@@ -221,5 +221,11 @@ class TasteTypesView(APIView):
         tags=["정보"],
     )
     def get(self, request):
-        types_data = list(TasteTestData.TYPE_INFO.values())
+        # 절대 URL로 변환하여 반환
+        types_data = []
+        for type_info in TasteTestData.TYPE_INFO.values():
+            type_info_copy = type_info.copy()
+            type_info_copy['image_url'] = TasteTestService.get_image_url_by_enum(type_info['enum'])
+            types_data.append(type_info_copy)
+
         return Response({"types": types_data, "total": len(types_data)}, status=status.HTTP_200_OK)
