@@ -46,9 +46,9 @@ class TasteTestAPITest(APITestCase):
         # 이미지 정보 확인 - 절대 URL 형식
         self.assertIn("image_url", response.data["info"])
         image_url = response.data["info"]["image_url"]
-        self.assertTrue(image_url.startswith(('http://', 'https://')))
-        self.assertTrue(image_url.endswith('.png'))
-        self.assertIn('/api/v1/taste-test/images/types/', image_url)
+        self.assertTrue(image_url.startswith(("http://", "https://")))
+        self.assertTrue(image_url.endswith(".png"))
+        self.assertIn("/api/v1/taste-test/images/types/", image_url)
         self.assertTrue(response.data["saved"])  # 로그인한 상태이므로 저장됨
 
     def test_submit_answers_without_auth(self):
@@ -89,8 +89,8 @@ class TasteTestAPITest(APITestCase):
 
         # 이미지 URL 형식 확인
         image_url = response.data["image_url"]
-        self.assertTrue(image_url.startswith(('http://', 'https://')))
-        self.assertTrue(image_url.endswith('.png'))
+        self.assertTrue(image_url.startswith(("http://", "https://")))
+        self.assertTrue(image_url.endswith(".png"))
 
     def test_get_profile_without_result(self):
         """프로필 조회 (테스트 결과 없음)"""
@@ -123,9 +123,9 @@ class TasteTestAPITest(APITestCase):
 
             # 이미지 URL 형식 확인
             image_url = taste_type["image_url"]
-            self.assertTrue(image_url.startswith(('http://', 'https://')))
-            self.assertTrue(image_url.endswith('.png'))
-            self.assertIn('/api/v1/taste-test/images/types/', image_url)
+            self.assertTrue(image_url.startswith(("http://", "https://")))
+            self.assertTrue(image_url.endswith(".png"))
+            self.assertIn("/api/v1/taste-test/images/types/", image_url)
 
     def test_retake_success(self):
         """재테스트 성공"""
@@ -150,8 +150,8 @@ class TasteTestAPITest(APITestCase):
         # 이미지 정보 확인 - 절대 URL 형식
         self.assertIn("image_url", response.data["info"])
         image_url = response.data["info"]["image_url"]
-        self.assertTrue(image_url.startswith(('http://', 'https://')))
-        self.assertTrue(image_url.endswith('.png'))
+        self.assertTrue(image_url.startswith(("http://", "https://")))
+        self.assertTrue(image_url.endswith(".png"))
 
     def test_retake_no_existing_result(self):
         """재테스트 - 기존 결과 없음"""

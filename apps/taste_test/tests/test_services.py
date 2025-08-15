@@ -135,7 +135,7 @@ class TasteTestServiceTest(TestCase):
                 image_url = TasteTestService.get_image_url_by_enum(enum_type)
 
                 # 절대 URL 형식인지 확인
-                self.assertTrue(image_url.startswith(('http://', 'https://')))
+                self.assertTrue(image_url.startswith(("http://", "https://")))
                 # 올바른 경로와 파일명 확인
                 expected_path = f"/api/v1/taste-test/images/types/{enum_type.lower()}.png"
                 self.assertTrue(image_url.endswith(expected_path))
@@ -161,8 +161,8 @@ class TasteTestServiceTest(TestCase):
 
                 # 절대 URL 형식인지 확인
                 image_url = actual_type_info["image_url"]
-                self.assertTrue(image_url.startswith(('http://', 'https://')))
-                self.assertTrue(image_url.endswith('.png'))
+                self.assertTrue(image_url.startswith(("http://", "https://")))
+                self.assertTrue(image_url.endswith(".png"))
 
     def test_enum_image_mapping_consistency(self):
         """enum과 이미지 매핑 일관성 테스트"""
@@ -339,7 +339,7 @@ class TasteTestServiceImageTest(TestCase):
                 image_url = TasteTestService.get_image_url_by_enum(enum_type)
 
                 # 절대 URL 형식 확인
-                self.assertTrue(image_url.startswith(('http://', 'https://')))
+                self.assertTrue(image_url.startswith(("http://", "https://")))
                 # 파일명 확인
                 expected_filename = f"{enum_type.lower()}.png"
                 self.assertTrue(image_url.endswith(expected_filename))
@@ -363,7 +363,7 @@ class TasteTestServiceImageTest(TestCase):
                 self.assertIn("image_url", type_info)
 
                 image_url = type_info["image_url"]
-                self.assertTrue(image_url.startswith(('http://', 'https://')))
+                self.assertTrue(image_url.startswith(("http://", "https://")))
                 self.assertTrue(image_url.endswith(".png"))
 
     def test_enum_image_mapping_consistency(self):
@@ -708,7 +708,7 @@ class TasteTestServiceIntegrationWithImageTest(TestCase):
                 image_url = actual_type_info["image_url"]
 
                 # 절대 URL 형식 확인
-                self.assertTrue(image_url.startswith(('http://', 'https://')))
+                self.assertTrue(image_url.startswith(("http://", "https://")))
                 self.assertTrue(image_url.endswith(".png"))
 
                 # 파일명 형식 확인 (enum을 소문자로 변환한 형태)
