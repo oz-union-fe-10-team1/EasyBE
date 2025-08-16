@@ -1,7 +1,8 @@
 # apps/products/serializers/package.py
 
 from rest_framework import serializers
-from apps.products.models import Package, PackageItem, Drink
+
+from apps.products.models import Drink, Package, PackageItem
 
 
 class PackageCreateSerializer(serializers.ModelSerializer):

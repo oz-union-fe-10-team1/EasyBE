@@ -1,12 +1,15 @@
 from django.db import transaction
 from rest_framework import serializers
+
 from apps.products.models import Product, ProductImage
 
-# 다른 시리얼라이저들 import
-from .image import ProductImageCreateSerializer
 from ..drink import DrinkCreateSerializer
 from ..package import PackageCreateSerializer
 from .detail import ProductDetailSerializer
+
+# 다른 시리얼라이저들 import
+from .image import ProductImageCreateSerializer
+
 
 class ProductBaseCreateSerializer(serializers.Serializer):
     """상품 생성 기본 시리얼라이저"""
@@ -65,6 +68,7 @@ class ProductBaseCreateSerializer(serializers.Serializer):
         """상품 이미지들 생성"""
         for image_data in images_data:
             ProductImage.objects.create(product=product, **image_data)
+
 
 class IndividualProductCreateSerializer(ProductBaseCreateSerializer):
     """개별 상품 생성용 시리얼라이저"""

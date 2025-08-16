@@ -4,7 +4,9 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.products.models import Product
+
 from .image import ProductImageSerializer
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     """상품 상세 시리얼라이저"""

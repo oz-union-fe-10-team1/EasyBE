@@ -229,7 +229,9 @@ class ProductCreationSerializerTest(BaseSerializerTestCase):
 
     def test_individual_product_creation_validation(self):
         """개별 상품 생성 유효성 검사"""
-        from apps.products.serializers.product.create import IndividualProductCreateSerializer
+        from apps.products.serializers.product.create import (
+            IndividualProductCreateSerializer,
+        )
         from apps.products.tests.test_data import get_individual_product_creation_data
 
         valid_data = get_individual_product_creation_data(self.test_data["breweries"][0].id)
@@ -247,7 +249,9 @@ class ProductCreationSerializerTest(BaseSerializerTestCase):
 
     def test_package_product_creation_validation(self):
         """패키지 상품 생성 유효성 검사"""
-        from apps.products.serializers.product.create import PackageProductCreateSerializer
+        from apps.products.serializers.product.create import (
+            PackageProductCreateSerializer,
+        )
         from apps.products.tests.test_data import get_package_product_creation_data
 
         drinks = self.test_data["drinks"]

@@ -1,12 +1,14 @@
 # apps/products/serializers/drink.py
 
+from typing import Optional
+
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.products.models import Drink
 
 from .brewery import BrewerySimpleSerializer
-from drf_spectacular.utils import extend_schema_field
-from typing import Optional
+
 
 class DrinkCreateSerializer(serializers.ModelSerializer):
     """술 생성용 시리얼라이저"""
@@ -63,6 +65,7 @@ class DrinkCreateSerializer(serializers.ModelSerializer):
         brewery = Brewery.objects.get(id=brewery_id)
         return Drink.objects.create(brewery=brewery, **validated_data)
 
+
 class DrinkListSerializer(serializers.ModelSerializer):
     """술 목록용 시리얼라이저 (관리자용 - 선택 목록)"""
 
@@ -72,6 +75,7 @@ class DrinkListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Drink
         fields = ["id", "name", "brewery", "alcohol_type", "alcohol_type_display", "abv", "volume_ml", "created_at"]
+
 
 class DrinkForPackageSerializer(serializers.ModelSerializer):
     """패키지 생성용 술 목록 시리얼라이저"""

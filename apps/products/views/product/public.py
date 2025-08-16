@@ -1,6 +1,7 @@
 # 필요한 imports들
 from decimal import Decimal
 from typing import Optional, Type
+
 from django.db.models import Case, DecimalField, F, Q, When
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
@@ -10,9 +11,10 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from apps.products.models import Product, ProductLike
-from apps.products.serializers.product.list import ProductListSerializer
 from apps.products.serializers.product.detail import ProductDetailSerializer
+from apps.products.serializers.product.list import ProductListSerializer
 
 from ..pagination import SearchPagination
 

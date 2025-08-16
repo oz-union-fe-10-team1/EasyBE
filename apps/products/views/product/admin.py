@@ -5,17 +5,21 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import filters
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import (
+    CreateAPIView,
+    ListAPIView,
+    RetrieveUpdateDestroyAPIView,
+)
 from rest_framework.permissions import IsAuthenticated
 
-from apps.products.models import Product, Drink
+from apps.products.models import Drink, Product
+from apps.products.serializers.drink import DrinkForPackageSerializer
 from apps.products.serializers.product.create import (
     IndividualProductCreateSerializer,
-    PackageProductCreateSerializer
+    PackageProductCreateSerializer,
 )
 from apps.products.serializers.product.detail import ProductDetailSerializer
 from apps.products.serializers.product.list import ProductListSerializer
-from apps.products.serializers.drink import DrinkForPackageSerializer
 
 from ..pagination import SearchPagination
 

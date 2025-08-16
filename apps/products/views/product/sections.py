@@ -26,6 +26,7 @@ class BaseSectionView(BaseProductListView):
 # 메인페이지 섹션 뷰들
 # ============================================================================
 
+
 class MonthlyFeaturedDrinksView(BaseSectionView):
     """이달의 전통주 (TOP 3)"""
 
@@ -33,9 +34,10 @@ class MonthlyFeaturedDrinksView(BaseSectionView):
 
     def get_queryset(self):
         # 개별 술 상품 중 이달의 추천 3개
-        return self.get_base_queryset().filter(
-            drink__isnull=False  # 개별 술만
-        ).order_by('-view_count')[:3]  # 조회수 높은 순 3개
+        return (
+            self.get_base_queryset().filter(drink__isnull=False).order_by("-view_count")[:3]  # 개별 술만
+        )  # 조회수 높은 순 3개
+
 
 class PopularProductsView(BaseSectionView):
     """인기 패키지"""
@@ -80,6 +82,7 @@ class RecommendedProductsView(BaseSectionView):
 # 패키지페이지 섹션 뷰들
 # ============================================================================
 
+
 class FeaturedProductsView(BaseSectionView):
     """추천 패키지"""
 
@@ -95,6 +98,7 @@ class FeaturedProductsView(BaseSectionView):
 
     def get_queryset(self):
         return self.get_base_queryset().filter(is_premium=True).order_by("-created_at")[:4]
+
 
 class AwardWinningProductsView(BaseSectionView):
     """수상작 패키지"""

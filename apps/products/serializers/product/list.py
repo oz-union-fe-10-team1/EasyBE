@@ -1,8 +1,10 @@
-from rest_framework import serializers
-from drf_spectacular.utils import extend_schema_field
 from typing import Optional
 
+from drf_spectacular.utils import extend_schema_field
+from rest_framework import serializers
+
 from apps.products.models import Product
+
 
 class ProductListSerializer(serializers.ModelSerializer):
     """상품 목록용 시리얼라이저"""
