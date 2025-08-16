@@ -10,7 +10,7 @@ from rest_framework.generics import (
     ListAPIView,
     RetrieveUpdateDestroyAPIView,
 )
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from apps.products.models import Drink, Product
 from apps.products.serializers.drink import DrinkForPackageSerializer
@@ -32,7 +32,7 @@ class IndividualProductCreateView(CreateAPIView):
     """개별 상품 생성 (관리자용)"""
 
     serializer_class = IndividualProductCreateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     @extend_schema(
         summary="개별 상품 생성",
