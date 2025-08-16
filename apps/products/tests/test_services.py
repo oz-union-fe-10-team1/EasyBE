@@ -83,15 +83,17 @@ class ProductServiceTest(BaseServiceTestCase):
 
     def test_get_section_products_featured(self):
         """추천 패키지 섹션 테스트"""
-        # 프리미엄 상품 설정
-        self.all_products[0].is_premium = True
-        self.all_products[0].save()
-
         products = ProductService.get_section_products("featured", limit=4)
 
-        # 프리미엄 상품만 반환되는지 확인
+        # 패키지 상품만 반환되는지 확인
         for product in products:
-            self.assertTrue(product.is_premium)
+            self.assertIsNotNone(product.package)
+            self.assertIsNone(product.drink)
+
+        # 최신순으로 정렬되는지 확인 (created_at 기준)
+        if len(products) > 1:
+            for i in range(len(products) - 1):
+                self.assertGreaterEqual(products[i].created_at, products[i + 1].created_at)
 
     def test_get_section_products_invalid_type(self):
         """잘못된 섹션 타입 테스트"""

@@ -128,7 +128,8 @@ class ProductService:
         elif section_type == "regional":
             # 패키지페이지용: 지역특산주 패키지만
             return base_queryset.filter(is_regional_specialty=True, package__isnull=False).order_by("-created_at")[
-                   :limit]
+                :limit
+            ]
 
         else:
             return base_queryset.none()
