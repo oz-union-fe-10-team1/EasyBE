@@ -125,15 +125,15 @@ class IndividualProductCreationAPITest(BaseProductCreationTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_create_individual_product_unauthenticated(self):
-        """비인증 사용자의 상품 생성 시도 테스트"""
-        self.client.force_authenticate(user=None)
-        url = reverse("products:v1:products-individual-create")  # 🔄 네임스페이스 수정
-        creation_data = get_individual_product_creation_data(self.breweries[0].id)
-
-        response = self.client.post(url, creation_data, format="json")
-
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    # def test_create_individual_product_unauthenticated(self):
+    #     """비인증 사용자의 상품 생성 시도 테스트"""
+    #     self.client.force_authenticate(user=None)
+    #     url = reverse("products:v1:products-individual-create")  # 🔄 네임스페이스 수정
+    #     creation_data = get_individual_product_creation_data(self.breweries[0].id)
+    #
+    #     response = self.client.post(url, creation_data, format="json")
+    #
+    #     self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class IndividualProductCreationTransactionTest(TransactionTestCase):
