@@ -10,7 +10,7 @@ from rest_framework.generics import (
     ListAPIView,
     RetrieveUpdateDestroyAPIView,
 )
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from apps.products.models import Drink, Product
 from apps.products.serializers.drink import DrinkForPackageSerializer
