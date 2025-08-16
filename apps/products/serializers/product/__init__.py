@@ -11,7 +11,7 @@ from .image import (
 )
 
 # TODO: 다른 시리얼라이저들도 추가 예정
-# from .list import ProductListSerializer
+from .list import ProductListSerializer
 # from .detail import ProductDetailSerializer
 # from .create import IndividualProductCreateSerializer, PackageProductCreateSerializer
 
@@ -21,7 +21,7 @@ __all__ = [
     'ProductImageCreateSerializer',
 
     # TODO: 나중에 추가
-    # 'ProductListSerializer',
+    'ProductListSerializer',
     # 'ProductDetailSerializer',
     # 'IndividualProductCreateSerializer',
     # 'PackageProductCreateSerializer',
