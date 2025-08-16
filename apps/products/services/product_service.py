@@ -66,6 +66,28 @@ class ProductService:
         )
 
     @staticmethod
+    def get_package_products_by_alcohol_type(alcohol_type: str, limit: int = 4):
+        """
+        특정 주종이 포함된 패키지 상품만 조회
+
+        Args:
+            alcohol_type: 주종 (MAKGEOLLI, YAKJU, etc.)
+            limit: 반환할 상품 수
+
+        Returns:
+            QuerySet: 해당 주종이 포함된 패키지 상품들
+        """
+        return (
+            Product.objects.filter(
+                status="ACTIVE", package__isnull=False, package__drinks__alcohol_type=alcohol_type  # 패키지 상품만
+            )
+            .select_related("package")
+            .prefetch_related("images", "package__drinks__brewery")
+            .distinct()
+            .order_by("-created_at")[:limit]
+        )
+
+    @staticmethod
     def get_section_products(section_type: str, limit: int = 8):
         """
         섹션별 상품 목록 조회
@@ -83,7 +105,10 @@ class ProductService:
             return base_queryset.order_by("-view_count")[:limit]
 
         elif section_type == "featured":
-            return base_queryset.filter(is_premium=True).order_by("-created_at")[:limit]
+            # 패키지페이지용: 프리미엄 패키지만
+            return base_queryset.filter(is_premium=True, package__isnull=False).order_by("-created_at")[  # 패키지만
+                :limit
+            ]
 
         elif section_type == "recommended":
             return base_queryset.filter(drink__isnull=False).order_by("-created_at")[:limit]
@@ -92,17 +117,20 @@ class ProductService:
             return base_queryset.filter(drink__isnull=False).order_by("-view_count")[:3]
 
         elif section_type == "award_winning":
-            return base_queryset.filter(is_award_winning=True).order_by("-order_count")[:limit]
+            # 패키지페이지용: 수상작 패키지만
+            return base_queryset.filter(is_award_winning=True, package__isnull=False).order_by(  # 패키지만
+                "-order_count"
+            )[:limit]
 
         elif section_type == "makgeolli":
-            return (
-                base_queryset.filter(package__drinks__alcohol_type="MAKGEOLLI")
-                .distinct()
-                .order_by("-created_at")[:limit]
-            )
+            # 패키지페이지 전용: 막걸리 패키지만
+            return ProductService.get_package_products_by_alcohol_type("MAKGEOLLI", limit)
 
         elif section_type == "regional":
-            return base_queryset.filter(is_regional_specialty=True).order_by("-created_at")[:limit]
+            # 패키지페이지용: 지역특산주 패키지만
+            return base_queryset.filter(is_regional_specialty=True, package__isnull=False).order_by(  # 패키지만
+                "-created_at"
+            )[:limit]
 
         else:
             return base_queryset.none()
