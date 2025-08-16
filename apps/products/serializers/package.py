@@ -1,6 +1,7 @@
+# apps/products/serializers/package.py
 
 from rest_framework import serializers
-from apps.products.models import Package, Drink, PackageItem
+from apps.products.models import Package, PackageItem, Drink
 
 
 class PackageCreateSerializer(serializers.ModelSerializer):
@@ -36,3 +37,18 @@ class PackageCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("존재하지 않는 술이 포함되어 있습니다.")
 
         return value
+
+    def create(self, validated_data):
+        """패키지 생성"""
+        # 🔧 drink_ids를 먼저 제거
+        drink_ids = validated_data.pop("drink_ids")
+
+        # Package 생성 (drink_ids 없이)
+        package = Package.objects.create(**validated_data)
+
+        # 패키지 아이템들 생성
+        drinks = Drink.objects.filter(id__in=drink_ids)
+        for drink in drinks:
+            PackageItem.objects.create(package=package, drink=drink)
+
+        return package

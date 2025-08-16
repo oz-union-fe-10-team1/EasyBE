@@ -31,7 +31,7 @@ class BreweryAPITest(BaseAPITestCase):
 
     def test_brewery_list_api(self):
         """양조장 목록 API 테스트"""
-        url = reverse("api:v1:breweries-list")
+        url = reverse("products:v1:breweries-list")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -44,7 +44,7 @@ class BreweryAPITest(BaseAPITestCase):
     def test_brewery_detail_api(self):
         """양조장 상세 API 테스트"""
         brewery = self.breweries[0]
-        url = reverse("api:v1:breweries-detail", kwargs={"pk": brewery.pk})
+        url = reverse("products:v1:breweries-detail", kwargs={"pk": brewery.pk})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -61,9 +61,9 @@ class BreweryAPITest(BaseAPITestCase):
 class ProductListAPITest(BaseAPITestCase):
     """상품 목록 조회 API 테스트"""
 
-    def test_product_list_api(self):
-        """상품 목록 API 테스트"""
-        url = reverse("api:v1:products-list")
+    def test_product_search_api(self):
+        """상품 검색 API 테스트"""
+        url = reverse("products:v1:products-search")  # 🔄 변경된 URL name
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -101,7 +101,7 @@ class ProductListAPITest(BaseAPITestCase):
 
     def test_product_filtering_tests(self):
         """상품 필터링 테스트들"""
-        url = reverse("api:v1:products-list")
+        url = reverse("products:v1:products-search")  # 🔄 변경된 URL name
 
         # 선물용 상품 필터링 테스트
         self.all_products[0].is_gift_suitable = True
@@ -153,7 +153,7 @@ class ProductListAPITest(BaseAPITestCase):
 
     def test_product_search_and_ordering(self):
         """상품 검색 및 정렬 테스트"""
-        url = reverse("api:v1:products-list")
+        url = reverse("products:v1:products-search")  # 🔄 변경된 URL name
 
         # 검색 테스트
         response = self.client.get(url, {"search": "막걸리"})
@@ -186,7 +186,7 @@ class ProductDetailAPITest(BaseAPITestCase):
     def test_individual_product_detail_api(self):
         """개별 상품 상세 API 테스트"""
         product = self.individual_products[0]
-        url = reverse("api:v1:products-detail", kwargs={"pk": product.pk})
+        url = reverse("products:v1:products-detail", kwargs={"pk": product.pk})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -205,7 +205,7 @@ class ProductDetailAPITest(BaseAPITestCase):
     def test_package_product_detail_api(self):
         """패키지 상품 상세 API 테스트"""
         product = self.package_products[0]
-        url = reverse("api:v1:products-detail", kwargs={"pk": product.pk})
+        url = reverse("products:v1:products-detail", kwargs={"pk": product.pk})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -223,7 +223,7 @@ class ProductDetailAPITest(BaseAPITestCase):
         product = self.individual_products[0]
         initial_view_count = product.view_count
 
-        url = reverse("api:v1:products-detail", kwargs={"pk": product.pk})
+        url = reverse("products:v1:products-detail", kwargs={"pk": product.pk})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -236,7 +236,7 @@ class ProductDetailAPITest(BaseAPITestCase):
         import uuid
 
         invalid_uuid = str(uuid.uuid4())
-        url = reverse("api:v1:products-detail", kwargs={"pk": invalid_uuid})
+        url = reverse("products:v1:products-detail", kwargs={"pk": invalid_uuid})
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -254,7 +254,7 @@ class ProductLikeAPITest(BaseAPITestCase):
         self.client.force_authenticate(user=self.user)
         product = self.individual_products[0]
 
-        url = reverse("api:v1:products-toggle-like", kwargs={"pk": product.pk})
+        url = reverse("products:v1:products-toggle-like", kwargs={"pk": product.pk})
 
         # 좋아요 추가
         response = self.client.post(url)
@@ -271,7 +271,7 @@ class ProductLikeAPITest(BaseAPITestCase):
     def test_product_like_toggle_unauthenticated(self):
         """비인증 사용자의 좋아요 시도 테스트"""
         product = self.individual_products[0]
-        url = reverse("api:v1:products-toggle-like", kwargs={"pk": product.pk})
+        url = reverse("products:v1:products-toggle-like", kwargs={"pk": product.pk})
 
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -280,14 +280,27 @@ class ProductLikeAPITest(BaseAPITestCase):
 class MainPageAPITest(BaseAPITestCase):
     """메인페이지 API 테스트"""
 
+    def test_monthly_featured_drinks_api(self):
+        """이달의 전통주 API 테스트"""  # 🆕 새로 추가
+        url = reverse("products:v1:products-monthly")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("title", response.data)
+        self.assertIn("products", response.data)
+        self.assertEqual(response.data["title"], "이달의 전통주")
+
+        products = response.data["products"]
+        self.assertLessEqual(len(products), 3)  # TOP 3개까지
+
     def test_popular_products_api(self):
-        """인기 상품 API 테스트"""
+        """인기 패키지 API 테스트"""
         self.all_products[0].view_count = 100
         self.all_products[0].save()
         self.all_products[1].view_count = 50
         self.all_products[1].save()
 
-        url = reverse("api:v1:products-popular")
+        url = reverse("products:v1:products-popular")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -300,9 +313,19 @@ class MainPageAPITest(BaseAPITestCase):
             second_views = products[1]["view_count"]
             self.assertGreaterEqual(first_views, second_views)
 
+    def test_recommended_products_api(self):
+        """추천 전통주 API 테스트"""
+        url = reverse("products:v1:products-recommended")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("title", response.data)
+        self.assertIn("products", response.data)
+        self.assertEqual(response.data["title"], "추천 전통주")
+
     def test_featured_products_api(self):
-        """추천 상품 API 테스트"""
-        url = reverse("api:v1:products-featured")
+        """추천 패키지 API 테스트"""
+        url = reverse("products:v1:products-featured")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -319,17 +342,17 @@ class ProductTasteProfileFilterTest(BaseAPITestCase):
 
     def test_multiple_taste_profile_filtering(self):
         """여러 맛 프로필 동시 필터링 테스트"""
-        url = reverse("api:v1:products-list")
+        url = reverse("products:v1:products-search")  # 🔄 변경된 URL name
 
         response = self.client.get(
             url,
             {
-                "sweetness_level": 3.0,
-                "acidity_level": 2.0,
-                "bitterness_level": 1.5,
-                "body_level": 4.0,
-                "carbonation_level": 2.5,
-                "aroma_level": 3.5,
+                "sweetness": 3.0,
+                "acidity": 2.0,
+                "bitterness": 1.5,
+                "body": 4.0,
+                "carbonation": 2.5,
+                "aroma": 3.5,
             },
         )
 
@@ -339,3 +362,30 @@ class ProductTasteProfileFilterTest(BaseAPITestCase):
         for product in results:
             if product["product_type"] == "individual":
                 self.assertIsNotNone(product.get("alcohol_type"))
+
+
+# 🆕 관리자 API 테스트 추가
+class AdminAPITest(BaseAPITestCase):
+    """관리자 API 테스트"""
+
+    def setUp(self):
+        super().setUp()
+        self.admin_user = TestDataCreator.create_user(is_staff=True)
+
+    def test_drinks_for_package_list(self):
+        """패키지용 술 목록 API 테스트"""
+        self.client.force_authenticate(user=self.admin_user)
+        url = reverse("products:v1:drinks-for-package")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("results", response.data)
+
+    def test_product_manage_list(self):
+        """관리자용 상품 목록 API 테스트"""
+        self.client.force_authenticate(user=self.admin_user)
+        url = reverse("products:v1:products-manage-list")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("results", response.data)

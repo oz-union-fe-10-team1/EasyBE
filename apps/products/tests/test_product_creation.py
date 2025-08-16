@@ -42,7 +42,7 @@ class IndividualProductCreationAPITest(BaseProductCreationTestCase):
     def test_create_individual_product_success(self):
         """개별 상품 생성 성공 테스트"""
         # Given
-        url = reverse("api:v1:products-individual-create")
+        url = reverse("products:v1:products-individual-create")  # 🔄 네임스페이스 수정
         creation_data = get_individual_product_creation_data(self.breweries[0].id)
 
         initial_counts = {
@@ -90,7 +90,7 @@ class IndividualProductCreationAPITest(BaseProductCreationTestCase):
 
     def test_create_individual_product_validation_errors(self):
         """개별 상품 생성 유효성 검사 실패 테스트"""
-        url = reverse("api:v1:products-individual-create")
+        url = reverse("products:v1:products-individual-create")  # 🔄 네임스페이스 수정
 
         # 빈 이름과 음수 가격
         invalid_data = get_individual_product_creation_data(self.breweries[0].id)
@@ -104,7 +104,7 @@ class IndividualProductCreationAPITest(BaseProductCreationTestCase):
 
     def test_create_individual_product_invalid_brewery(self):
         """존재하지 않는 양조장으로 상품 생성 실패 테스트"""
-        url = reverse("api:v1:products-individual-create")
+        url = reverse("products:v1:products-individual-create")  # 🔄 네임스페이스 수정
         invalid_data = get_individual_product_creation_data(999)  # 존재하지 않는 ID
 
         response = self.client.post(url, invalid_data, format="json")
@@ -113,7 +113,7 @@ class IndividualProductCreationAPITest(BaseProductCreationTestCase):
 
     def test_create_individual_product_duplicate_name(self):
         """같은 양조장에서 동일한 이름의 술 생성 실패 테스트"""
-        url = reverse("api:v1:products-individual-create")
+        url = reverse("products:v1:products-individual-create")  # 🔄 네임스페이스 수정
         creation_data = get_individual_product_creation_data(self.breweries[0].id)
 
         # 첫 번째 상품 생성
@@ -128,7 +128,7 @@ class IndividualProductCreationAPITest(BaseProductCreationTestCase):
     def test_create_individual_product_unauthenticated(self):
         """비인증 사용자의 상품 생성 시도 테스트"""
         self.client.force_authenticate(user=None)
-        url = reverse("api:v1:products-individual-create")
+        url = reverse("products:v1:products-individual-create")  # 🔄 네임스페이스 수정
         creation_data = get_individual_product_creation_data(self.breweries[0].id)
 
         response = self.client.post(url, creation_data, format="json")
@@ -148,7 +148,7 @@ class IndividualProductCreationTransactionTest(TransactionTestCase):
 
     def test_product_creation_rollback_on_error(self):
         """상품 생성 실패 시 트랜잭션 롤백 테스트"""
-        url = reverse("api:v1:products-individual-create")
+        url = reverse("products:v1:products-individual-create")  # 🔄 네임스페이스 수정
         creation_data = get_individual_product_creation_data(self.breweries[0].id)
 
         initial_counts = {
@@ -186,7 +186,7 @@ class PackageProductCreationAPITest(BaseProductCreationTestCase):
 
     def test_get_drinks_for_package(self):
         """패키지 생성용 술 목록 조회 테스트"""
-        url = reverse("api:v1:drinks-for-package")
+        url = reverse("products:v1:drinks-for-package")  # 🔄 네임스페이스 수정
 
         response = self.client.get(url)
 
@@ -206,7 +206,7 @@ class PackageProductCreationAPITest(BaseProductCreationTestCase):
 
     def test_create_package_product_success(self):
         """패키지 상품 생성 성공 테스트"""
-        url = reverse("api:v1:products-package-create")
+        url = reverse("products:v1:products-package-create")  # 🔄 네임스페이스 수정
         drink_ids = [self.drinks[0].id, self.drinks[1].id, self.drinks[2].id]
         creation_data = get_package_product_creation_data(drink_ids)
 
@@ -245,7 +245,7 @@ class PackageProductCreationAPITest(BaseProductCreationTestCase):
 
     def test_create_package_validation_errors(self):
         """패키지 생성 유효성 검사 테스트"""
-        url = reverse("api:v1:products-package-create")
+        url = reverse("products:v1:products-package-create")  # 🔄 네임스페이스 수정
 
         # 잘못된 술 ID로 패키지 생성 시도
         invalid_data = get_package_product_creation_data([999, 1000])  # 존재하지 않는 ID
@@ -273,7 +273,7 @@ class PackageProductCreationAPITest(BaseProductCreationTestCase):
     def test_create_package_product_unauthenticated(self):
         """비인증 사용자의 패키지 생성 시도 테스트"""
         self.client.force_authenticate(user=None)
-        url = reverse("api:v1:products-package-create")
+        url = reverse("products:v1:products-package-create")  # 🔄 네임스페이스 수정
         drink_ids = [self.drinks[0].id, self.drinks[1].id, self.drinks[2].id]
         creation_data = get_package_product_creation_data(drink_ids)
 
@@ -295,7 +295,7 @@ class PackageProductCreationTransactionTest(TransactionTestCase):
 
     def test_package_creation_rollback_on_error(self):
         """패키지 생성 실패 시 트랜잭션 롤백 테스트"""
-        url = reverse("api:v1:products-package-create")
+        url = reverse("products:v1:products-package-create")  # 🔄 네임스페이스 수정
         drink_ids = [self.drinks[0].id, self.drinks[1].id, self.drinks[2].id]
         creation_data = get_package_product_creation_data(drink_ids)
 
