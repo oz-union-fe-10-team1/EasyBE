@@ -9,10 +9,6 @@ from .drink import (
     DrinkListSerializer,
 )
 from .product import (
-    DrinkForPackageSerializer,
-    IndividualProductCreateSerializer,
-    PackageProductCreateSerializer,
-    ProductDetailSerializer,
     ProductImageSerializer,
     ProductListSerializer,
 )
@@ -27,9 +23,4 @@ __all__ = [
     # Product (UI용 + 관리자용)
     "ProductImageSerializer",
     "ProductListSerializer",
-    "ProductDetailSerializer",
-    # 관리자용 제품 생성
-    "IndividualProductCreateSerializer",
-    "PackageProductCreateSerializer",
-    "DrinkForPackageSerializer",
 ]

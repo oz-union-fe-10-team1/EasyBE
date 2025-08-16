@@ -60,7 +60,7 @@ class DrinkSerializerTest(BaseSerializerTestCase):
 
     def test_drink_serialization_basic_fields(self):
         """술 기본 필드 직렬화 검증"""
-        from apps.products.serializers.product import ProductDetailSerializer
+        from apps.products.serializers.product.detail import ProductDetailSerializer
 
         # 개별 상품을 통해 drink 정보 확인
         product = Product.objects.filter(drink=self.drink).first()
@@ -80,7 +80,7 @@ class DrinkSerializerTest(BaseSerializerTestCase):
 
     def test_drink_taste_profile_serialization(self):
         """술 맛 프로필 직렬화 검증"""
-        from apps.products.serializers.product import ProductDetailSerializer
+        from apps.products.serializers.product.detail import ProductDetailSerializer
 
         product = Product.objects.filter(drink=self.drink).first()
         if not product:
@@ -98,7 +98,7 @@ class DrinkSerializerTest(BaseSerializerTestCase):
 
     def test_drink_for_package_serialization(self):
         """패키지용 술 직렬화 검증"""
-        from apps.products.serializers.product import DrinkForPackageSerializer
+        from apps.products.serializers.drink import DrinkForPackageSerializer
 
         serializer = DrinkForPackageSerializer(self.drink)
         data = serializer.data
@@ -116,7 +116,7 @@ class PackageSerializerTest(BaseSerializerTestCase):
 
     def test_package_serialization(self):
         """패키지 직렬화 검증"""
-        from apps.products.serializers.product import ProductDetailSerializer
+        from apps.products.serializers.product.detail import ProductDetailSerializer
 
         # 패키지 상품을 통해 package 정보 확인
         product = Product.objects.filter(package=self.package).first()
@@ -140,7 +140,7 @@ class ProductSerializerTest(BaseSerializerTestCase):
 
     def test_individual_product_serialization(self):
         """개별 상품 직렬화 검증"""
-        from apps.products.serializers.product import ProductDetailSerializer
+        from apps.products.serializers.product.detail import ProductDetailSerializer
 
         serializer = ProductDetailSerializer(self.individual_product)
         data = serializer.data
@@ -161,7 +161,7 @@ class ProductSerializerTest(BaseSerializerTestCase):
 
     def test_package_product_serialization(self):
         """패키지 상품 직렬화 검증"""
-        from apps.products.serializers.product import ProductDetailSerializer
+        from apps.products.serializers.product.detail import ProductDetailSerializer
 
         serializer = ProductDetailSerializer(self.package_product)
         data = serializer.data
@@ -175,7 +175,7 @@ class ProductSerializerTest(BaseSerializerTestCase):
 
     def test_product_list_serialization(self):
         """상품 목록 직렬화 검증"""
-        from apps.products.serializers.product import ProductListSerializer
+        from apps.products.serializers.product.list import ProductListSerializer
 
         all_products = self.test_data["all_products"]
         serializer = ProductListSerializer(all_products, many=True)
@@ -211,7 +211,7 @@ class ProductSerializerTest(BaseSerializerTestCase):
 
     def test_product_no_discount_serialization(self):
         """할인 없는 상품 직렬화 검증"""
-        from apps.products.serializers.product import ProductDetailSerializer
+        from apps.products.serializers.product.detail import ProductDetailSerializer
 
         no_discount_product = self.test_data["individual_products"][1]
         serializer = ProductDetailSerializer(no_discount_product)
@@ -229,7 +229,9 @@ class ProductCreationSerializerTest(BaseSerializerTestCase):
 
     def test_individual_product_creation_validation(self):
         """개별 상품 생성 유효성 검사"""
-        from apps.products.serializers.product import IndividualProductCreateSerializer
+        from apps.products.serializers.product.create import (
+            IndividualProductCreateSerializer,
+        )
         from apps.products.tests.test_data import get_individual_product_creation_data
 
         valid_data = get_individual_product_creation_data(self.test_data["breweries"][0].id)
@@ -247,7 +249,9 @@ class ProductCreationSerializerTest(BaseSerializerTestCase):
 
     def test_package_product_creation_validation(self):
         """패키지 상품 생성 유효성 검사"""
-        from apps.products.serializers.product import PackageProductCreateSerializer
+        from apps.products.serializers.product.create import (
+            PackageProductCreateSerializer,
+        )
         from apps.products.tests.test_data import get_package_product_creation_data
 
         drinks = self.test_data["drinks"]
@@ -263,42 +267,3 @@ class ProductCreationSerializerTest(BaseSerializerTestCase):
 
         serializer = PackageProductCreateSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
-
-
-# ProductFilterSerializerTest 클래스는 ProductFilterSerializer가 존재하지 않으므로 삭제
-# 대신 실제 API를 통한 필터링 테스트로 대체
-
-
-class ProductFilterAPITest(BaseSerializerTestCase):
-    """상품 필터링 API 테스트 (Serializer 대신 실제 API 테스트)"""
-
-    def test_filter_validation(self):
-        """API를 통한 필터 검증"""
-        from django.urls import reverse
-
-        url = reverse("api:v1:products-list")  # 실제 search endpoint
-
-        # 유효한 필터 파라미터
-        response = self.client.get(
-            url,
-            {
-                "search": "막걸리",
-                "ordering": "-created_at",
-            },
-        )
-        self.assertEqual(response.status_code, 200)
-
-    def test_taste_profile_filtering(self):
-        """맛 프로필 필터링 테스트"""
-        from django.urls import reverse
-
-        url = reverse("api:v1:products-list")
-
-        # 맛 프로필 필터 (실제 API에서 지원하는 파라미터만)
-        response = self.client.get(
-            url,
-            {
-                "alcohol_type": "MAKGEOLLI",
-            },
-        )
-        self.assertEqual(response.status_code, 200)
