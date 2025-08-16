@@ -1,8 +1,7 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 
-from apps.products.models import Product
-from apps.products.serializers.product.list import ProductListSerializer
+from apps.products.services import ProductService
 
 from .public import BaseProductListView
 
@@ -32,11 +31,16 @@ class MonthlyFeaturedDrinksView(BaseSectionView):
 
     section_title = "이달의 전통주"
 
+    @extend_schema(
+        summary="이달의 전통주",
+        description="조회수 기준 이달의 추천 전통주 TOP 3를 반환합니다. (메인페이지용)",
+        tags=["메인페이지"],
+    )
+    def get(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self):
-        # 개별 술 상품 중 이달의 추천 3개
-        return (
-            self.get_base_queryset().filter(drink__isnull=False).order_by("-view_count")[:3]  # 개별 술만
-        )  # 조회수 높은 순 3개
+        return ProductService.get_section_products("monthly", limit=3)
 
 
 class PopularProductsView(BaseSectionView):
@@ -53,7 +57,7 @@ class PopularProductsView(BaseSectionView):
         return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
-        return self.get_base_queryset().order_by("-view_count")[:8]
+        return ProductService.get_section_products("popular", limit=8)
 
 
 class RecommendedProductsView(BaseSectionView):
@@ -70,12 +74,7 @@ class RecommendedProductsView(BaseSectionView):
         return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
-        return (
-            Product.objects.filter(status="ACTIVE", drink__isnull=False)
-            .select_related("drink__brewery")
-            .prefetch_related("images")
-            .order_by("-created_at")[:8]
-        )
+        return ProductService.get_section_products("recommended", limit=8)
 
 
 # ============================================================================
@@ -90,14 +89,14 @@ class FeaturedProductsView(BaseSectionView):
 
     @extend_schema(
         summary="추천 패키지",
-        description="프리미엄 제품 중 추천 패키지 4개를 반환합니다. (메인페이지용)",
+        description="프리미엄 제품 중 추천 패키지 4개를 반환합니다. (패키지페이지용)",
         tags=["패키지페이지"],
     )
     def get(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
-        return self.get_base_queryset().filter(is_premium=True).order_by("-created_at")[:4]
+        return ProductService.get_section_products("featured", limit=4)
 
 
 class AwardWinningProductsView(BaseSectionView):
@@ -114,7 +113,7 @@ class AwardWinningProductsView(BaseSectionView):
         return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
-        return self.get_base_queryset().filter(is_award_winning=True).order_by("-order_count")[:4]
+        return ProductService.get_section_products("award_winning", limit=4)
 
 
 class MakgeolliProductsView(BaseSectionView):
@@ -131,12 +130,7 @@ class MakgeolliProductsView(BaseSectionView):
         return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
-        return (
-            self.get_base_queryset()
-            .filter(package__drinks__alcohol_type="MAKGEOLLI")
-            .distinct()
-            .order_by("-created_at")[:4]
-        )
+        return ProductService.get_section_products("makgeolli", limit=4)
 
 
 class RegionalProductsView(BaseSectionView):
@@ -153,4 +147,4 @@ class RegionalProductsView(BaseSectionView):
         return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
-        return self.get_base_queryset().filter(is_regional_specialty=True).order_by("-created_at")[:4]
+        return ProductService.get_section_products("regional", limit=4)

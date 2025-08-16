@@ -1,5 +1,5 @@
-# 필요한 imports들
-from decimal import Decimal
+# apps/products/views/product/public.py
+
 from typing import Optional, Type
 
 from django.db.models import Case, DecimalField, F, Q, When
@@ -16,6 +16,8 @@ from apps.products.models import Product, ProductLike
 from apps.products.serializers.product.detail import ProductDetailSerializer
 from apps.products.serializers.product.list import ProductListSerializer
 
+from ...services import ProductService, SearchService
+from ...services.like_service import LikeService
 from ..pagination import SearchPagination
 
 # ============================================================================
@@ -30,12 +32,8 @@ class BaseProductListView(ListAPIView):
     pagination_class: Optional[Type[SearchPagination]] = None
 
     def get_base_queryset(self):
-        """기본 쿼리셋 - 최적화된 조회"""
-        return (
-            Product.objects.filter(status="ACTIVE")
-            .select_related("drink__brewery", "package")
-            .prefetch_related("images", "package__drinks__brewery")
-        )
+        """기본 쿼리셋 - Service에서 가져오기"""
+        return ProductService.get_product_list_queryset()
 
     def get_queryset(self):
         """각 뷰에서 오버라이드"""
@@ -110,61 +108,7 @@ class ProductSearchView(BaseProductListView):
         return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
-        queryset = self.get_base_queryset().annotate(
-            discount_rate=Case(
-                When(
-                    original_price__isnull=False,
-                    discount__isnull=False,
-                    original_price__gt=0,
-                    then=F("discount") * 100.0 / F("original_price"),
-                ),
-                default=0.0,
-                output_field=DecimalField(max_digits=5, decimal_places=1),
-            )
-        )
-
-        queryset = self._apply_taste_filters(queryset)
-        queryset = self._apply_category_filters(queryset)
-        return queryset
-
-    def _apply_taste_filters(self, queryset):
-        """맛 프로필 슬라이더 필터링"""
-        taste_params = {
-            "sweetness": "drink__sweetness_level",
-            "acidity": "drink__acidity_level",
-            "body": "drink__body_level",
-            "carbonation": "drink__carbonation_level",
-            "bitterness": "drink__bitterness_level",
-            "aroma": "drink__aroma_level",
-        }
-
-        for param, field in taste_params.items():
-            value = self.request.query_params.get(param)
-            if value:
-                try:
-                    target = Decimal(str(value))
-                    queryset = queryset.filter(
-                        **{f"{field}__gte": max(Decimal("0.0"), target - Decimal("0.5"))},
-                        **{f"{field}__lte": min(Decimal("5.0"), target + Decimal("0.5"))},
-                    )
-                except (ValueError, TypeError):
-                    continue
-        return queryset
-
-    def _apply_category_filters(self, queryset):
-        """카테고리 체크박스 필터링"""
-        filter_mapping = {
-            "gift_suitable": "is_gift_suitable",
-            "regional_specialty": "is_regional_specialty",
-            "limited_edition": "is_limited_edition",
-            "premium": "is_premium",
-            "award_winning": "is_award_winning",
-        }
-
-        for param, field in filter_mapping.items():
-            if self.request.query_params.get(param) == "true":
-                queryset = queryset.filter(**{field: True})
-        return queryset
+        return SearchService.get_search_queryset(self.request.query_params)
 
 
 class ProductDetailView(RetrieveAPIView):
@@ -188,21 +132,12 @@ class ProductDetailView(RetrieveAPIView):
         tags=["제품"],
     )
     def get(self, request, *args, **kwargs):
-        instance = self.get_object()
 
-        # 조회수 증가
-        Product.objects.filter(pk=instance.pk).update(view_count=F("view_count") + 1)
-        instance.refresh_from_db()
+        product_id = kwargs.get("pk")
+        product = ProductService.get_product_detail(product_id)
 
-        serializer = self.get_serializer(instance)
+        serializer = self.get_serializer(product)
         return Response(serializer.data)
-
-    def get_queryset(self):
-        return (
-            Product.objects.filter(status="ACTIVE")
-            .select_related("drink__brewery", "package")
-            .prefetch_related("images", "package__drinks__brewery")
-        )
 
 
 class ProductLikeToggleView(APIView):
@@ -237,21 +172,6 @@ class ProductLikeToggleView(APIView):
         tags=["제품"],
     )
     def post(self, request, pk):
-        try:
-            product = Product.objects.get(pk=pk, status="ACTIVE")
-        except Product.DoesNotExist:
-            return Response({"error": "상품을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        is_liked, like_count = LikeService.toggle_product_like(user=request.user, product_id=pk)
 
-        like, created = ProductLike.objects.get_or_create(user=request.user, product=product)
-
-        if not created:
-            like.delete()
-            is_liked = False
-        else:
-            is_liked = True
-
-        # 좋아요 수 업데이트
-        like_count = ProductLike.objects.filter(product=product).count()
-        Product.objects.filter(pk=product.pk).update(like_count=like_count)
-
-        return Response({"is_liked": is_liked, "like_count": like_count})
+        return Response({"is_liked": is_liked, "like_count": like_count}, status=status.HTTP_200_OK)
