@@ -2,6 +2,8 @@
 컨트롤러 지원 서비스 - 뷰에서 사용할 고수준 서비스 메서드들
 """
 
+from typing import Any, Dict, cast
+
 from ..constants import TYPE_INFO
 from ..models import PreferenceTestResult
 from .base import TasteTestService
@@ -69,13 +71,15 @@ class ControllerService:
         return data
 
     @staticmethod
-    def get_taste_types_data() -> dict:
+    def get_taste_types_data() -> Dict[str, Any]:
         """취향 유형 목록 데이터 조회"""
         types_data = []
 
         for type_info in TYPE_INFO.values():
             type_info_copy = type_info.copy()
-            type_info_copy["image_url"] = TasteTestService.get_image_url_by_enum(type_info["enum"])
+            # enum 값을 안전하게 str로 캐스팅
+            enum_value = cast(str, type_info["enum"])
+            type_info_copy["image_url"] = TasteTestService.get_image_url_by_enum(enum_value)
             types_data.append(type_info_copy)
 
         return {"types": types_data, "total": len(types_data)}

@@ -2,6 +2,8 @@
 메시지 생성 유틸리티
 """
 
+from typing import Dict
+
 
 class MessageGenerator:
     """사용자 메시지 생성"""

@@ -4,7 +4,7 @@
 
 from typing import Dict
 
-from ..utils import MessageGenerator
+from ..utils import MessageGenerator, URLHelper
 from .analyzer import TypeAnalyzer
 
 
