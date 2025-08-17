@@ -1,4 +1,5 @@
 from django.urls import include, path
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.users.views.user_restore_code_view import (
     SendRecoveryCodeAPIView,
@@ -22,6 +23,8 @@ v1_patterns = [
     path("auth/login/naver", NaverLoginView.as_view(), name="naver_login"),
     path("auth/login/google", GoogleLoginView.as_view(), name="google_login"),
     path("auth/state", OAuthStateView.as_view(), name="save_oauth_state"),
+    # jwt token refresh
+    path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # 사용자 취향 프로필 조회 및 수정
     path("user/taste-profile/", TasteProfileView.as_view(), name="taste_profile"),
     path("restore/", SendRecoveryCodeAPIView.as_view(), name="save_recovery_code"),
