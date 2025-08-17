@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -233,3 +234,24 @@ NCLOUD_SECRET_ACCESS_KEY = os.getenv("NCLOUD_SECRET_ACCESS_KEY")
 NCLOUD_REGION_NAME = os.getenv("NCLOUD_REGION_NAME", default="kr-standard")
 NCLOUD_ENDPOINT_URL = os.getenv("NCLOUD_ENDPOINT_URL", default="https://kr.object.ncloudstorage.com")
 NCLOUD_BUCKET_NAME = os.getenv("NCLOUD_BUCKET_NAME")
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),  # Access token 유효기간 (짧게)
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),  # Refresh token 유효기간 (길게)
+    "ROTATE_REFRESH_TOKENS": True,  # Refresh 시 새로운 refresh token 발급
+    "BLACKLIST_AFTER_ROTATION": True,  # 기존 refresh token 블랙리스트 처리
+    "UPDATE_LAST_LOGIN": True,  # 로그인 시간 업데이트
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "VERIFYING_KEY": None,
+    "AUDIENCE": None,
+    "ISSUER": None,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+    "TOKEN_BLACKLIST_ENABLED": True,  # 블랙리스트 기능 활성화
+}
