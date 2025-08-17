@@ -1,5 +1,5 @@
 """
-사용자 프로필 관련 뷰
+사용자 프로필 관련 뷰 - 단계별 처리 과정 명시
 """
 
 from drf_spectacular.utils import extend_schema
@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..services import TasteTestService
+from ..services.controller_support import ControllerService
 
 
 class UserProfileView(APIView):
@@ -37,21 +37,9 @@ class UserProfileView(APIView):
         tags=["사용자"],
     )
     def get(self, request):
-        has_test = hasattr(request.user, "preference_test_result")
+        """사용자 프로필 조회"""
+        # 1. 서비스에서 사용자 프로필 데이터 조회
+        profile_data = ControllerService.get_user_profile_data(request.user)
 
-        data = {"user": request.user.nickname, "has_test": has_test}
-
-        if has_test:
-            test_result = request.user.preference_test_result
-            data.update(
-                {
-                    "id": test_result.id,
-                    "prefer_taste": test_result.prefer_taste,
-                    "prefer_taste_display": test_result.get_prefer_taste_display(),
-                    "taste_description": test_result.get_taste_description(),
-                    "image_url": TasteTestService.get_image_url_by_enum(test_result.prefer_taste),
-                    "created_at": test_result.created_at,
-                }
-            )
-
-        return Response(data, status=status.HTTP_200_OK)
+        # 2. 응답 반환
+        return Response(profile_data, status=status.HTTP_200_OK)

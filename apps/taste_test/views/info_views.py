@@ -1,5 +1,5 @@
 """
-정보 조회 관련 뷰
+정보 조회 관련 뷰 - 단계별 처리 과정 명시
 """
 
 from drf_spectacular.utils import extend_schema
@@ -8,8 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..constants import TYPE_INFO
-from ..services import TasteTestService
+from ..services.controller_support import ControllerService
 
 
 class TasteTypesView(APIView):
@@ -40,11 +39,9 @@ class TasteTypesView(APIView):
         tags=["정보"],
     )
     def get(self, request):
-        # 절대 URL로 변환하여 반환
-        types_data = []
-        for type_info in TYPE_INFO.values():
-            type_info_copy = type_info.copy()
-            type_info_copy["image_url"] = TasteTestService.get_image_url_by_enum(type_info["enum"])
-            types_data.append(type_info_copy)
+        """취향 유형 목록 조회"""
+        # 1. 서비스에서 취향 유형 데이터 조회 (이미지 URL 포함 처리)
+        taste_types_data = ControllerService.get_taste_types_data()
 
-        return Response({"types": types_data, "total": len(types_data)}, status=status.HTTP_200_OK)
+        # 2. 응답 반환
+        return Response(taste_types_data, status=status.HTTP_200_OK)

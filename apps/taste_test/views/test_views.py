@@ -1,5 +1,5 @@
 """
-취향 테스트 관련 뷰 - DRF 표준 패턴
+취향 테스트 관련 뷰 - 단계별 처리 과정 명시
 """
 
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
@@ -43,7 +43,11 @@ class TasteTestQuestionsView(APIView):
     )
     def get(self, request):
         """질문 목록 조회"""
-        return ControllerService.get_test_questions()
+        # 1. 서비스에서 질문 데이터 조회
+        questions = ControllerService.get_test_questions()
+
+        # 2. 응답 반환
+        return Response(questions, status=status.HTTP_200_OK)
 
 
 class TasteTestSubmitView(APIView):
@@ -86,11 +90,17 @@ class TasteTestSubmitView(APIView):
     )
     def post(self, request):
         """테스트 답변 제출"""
+        # 1. 데이터 검증 (Serializer 활용)
         serializer = TasteTestAnswersSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            result = ControllerService.submit_test_answers(request.user, serializer.validated_data['answers'])
-            return Response(result, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2. 검증된 데이터로 비즈니스 로직 처리
+        validated_answers = serializer.validated_data['answers']
+        result = ControllerService.submit_test_answers(request.user, validated_answers)
+
+        # 3. 결과 반환
+        return Response(result, status=status.HTTP_201_CREATED)
 
 
 class TasteTestRetakeView(APIView):
@@ -114,14 +124,20 @@ class TasteTestRetakeView(APIView):
     )
     def put(self, request):
         """테스트 재응시"""
+        # 1. 데이터 검증 (Serializer 활용)
         serializer = TasteTestAnswersSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            try:
-                result = ControllerService.retake_test(request.user, serializer.validated_data['answers'])
-                return Response(result, status=status.HTTP_200_OK)
-            except PreferenceTestResult.DoesNotExist:
-                return Response(
-                    {"message": "기존 테스트 결과가 없습니다. /submit/ 을 이용해주세요."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2. 검증된 데이터로 재테스트 처리
+        validated_answers = serializer.validated_data['answers']
+        try:
+            result = ControllerService.retake_test(request.user, validated_answers)
+        except PreferenceTestResult.DoesNotExist:
+            return Response(
+                {"message": "기존 테스트 결과가 없습니다. /submit/ 을 이용해주세요."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 3. 결과 반환
+        return Response(result, status=status.HTTP_200_OK)
