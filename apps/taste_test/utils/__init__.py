@@ -3,7 +3,9 @@
 """
 
 from .url_helper import URLHelper
+from .message_generator import MessageGenerator
 
 __all__ = [
     "URLHelper",
+    "MessageGenerator",
 ]
