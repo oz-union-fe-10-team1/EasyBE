@@ -26,7 +26,7 @@ urlpatterns = [
 ]
 
 # 이미지 서빙 설정 (개발/배포 환경 모두)
-urlpatterns += static("/api/taste-test/images/", document_root=settings.BASE_DIR / "images")
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
 
 # if settings.DEBUG:
 #     if "debug_toolbar" in settings.INSTALLED_APPS:
