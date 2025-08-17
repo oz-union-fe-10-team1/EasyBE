@@ -59,14 +59,16 @@ class ControllerService:
 
         if has_test:
             test_result = user.preference_test_result
-            data.update({
-                "id": test_result.id,
-                "prefer_taste": test_result.prefer_taste,
-                "prefer_taste_display": test_result.get_prefer_taste_display(),
-                "taste_description": test_result.get_taste_description(),
-                "image_url": TasteTestService.get_image_url_by_enum(test_result.prefer_taste),
-                "created_at": test_result.created_at,
-            })
+            data.update(
+                {
+                    "id": test_result.id,
+                    "prefer_taste": test_result.prefer_taste,
+                    "prefer_taste_display": test_result.get_prefer_taste_display(),
+                    "taste_description": test_result.get_taste_description(),
+                    "image_url": TasteTestService.get_image_url_by_enum(test_result.prefer_taste),
+                    "created_at": test_result.created_at,
+                }
+            )
 
         return data
 

@@ -41,6 +41,7 @@ class TestResultStorage:
 
         # PreferTasteProfile 처리
         from .profile_handler import ProfileHandler
+
         profile_result = ProfileHandler.handle_taste_profile(user, result, is_new_test)
 
         # 결과에 프로필 처리 정보 추가

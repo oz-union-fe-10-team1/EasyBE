@@ -33,7 +33,7 @@ class ProfileHandler:
                     "retake_applied",
                     influence_rate=retake_result["influence_rate"],
                     changes_made=retake_result["changes_made"],
-                    message=retake_result["message"]
+                    message=retake_result["message"],
                 )
 
             else:
@@ -49,6 +49,7 @@ class ProfileHandler:
         """재테스트 시 변화 미리보기 (실제 저장하지 않음)"""
         try:
             from django.apps import apps
+
             from ..constants import TASTE_PROFILES
 
             PreferTasteProfile = apps.get_model("users", "PreferTasteProfile")
@@ -109,11 +110,15 @@ class ProfileHandler:
 
             return {
                 "new_type": korean_type,
-                "current_type": TypeAnalyzer.get_type_info_by_enum(profile.user.preference_test_result.prefer_taste)["name"],
+                "current_type": TypeAnalyzer.get_type_info_by_enum(profile.user.preference_test_result.prefer_taste)[
+                    "name"
+                ],
                 "influence_rate": f"{int(test_influence * 100)}%",
                 "review_count": review_count,
                 "predicted_changes": preview_changes,
-                "message": MessageGenerator.generate_preview_message(review_count, test_influence, len(preview_changes)),
+                "message": MessageGenerator.generate_preview_message(
+                    review_count, test_influence, len(preview_changes)
+                ),
             }
 
         except Exception as e:

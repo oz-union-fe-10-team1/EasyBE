@@ -5,12 +5,12 @@
 from typing import Dict, List
 
 from ..constants import QUESTIONS
-from ..validators import AnswerValidator
 from ..utils import URLHelper
-from .calculator import ScoreCalculator
+from ..validators import AnswerValidator
 from .analyzer import TypeAnalyzer
-from .storage import TestResultStorage
+from .calculator import ScoreCalculator
 from .profile_handler import ProfileHandler
+from .storage import TestResultStorage
 
 
 class TasteTestService:

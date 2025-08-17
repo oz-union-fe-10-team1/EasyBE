@@ -91,12 +91,12 @@ class TasteTestSubmitView(APIView):
     def post(self, request):
         """테스트 답변 제출"""
         # 1. 데이터 검증 (Serializer 활용)
-        serializer = TasteTestAnswersSerializer(data=request.data, context={'request': request})
+        serializer = TasteTestAnswersSerializer(data=request.data, context={"request": request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # 2. 검증된 데이터로 비즈니스 로직 처리
-        validated_answers = serializer.validated_data['answers']
+        validated_answers = serializer.validated_data["answers"]
         result = ControllerService.submit_test_answers(request.user, validated_answers)
 
         # 3. 결과 반환
@@ -125,18 +125,17 @@ class TasteTestRetakeView(APIView):
     def put(self, request):
         """테스트 재응시"""
         # 1. 데이터 검증 (Serializer 활용)
-        serializer = TasteTestAnswersSerializer(data=request.data, context={'request': request})
+        serializer = TasteTestAnswersSerializer(data=request.data, context={"request": request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # 2. 검증된 데이터로 재테스트 처리
-        validated_answers = serializer.validated_data['answers']
+        validated_answers = serializer.validated_data["answers"]
         try:
             result = ControllerService.retake_test(request.user, validated_answers)
         except PreferenceTestResult.DoesNotExist:
             return Response(
-                {"message": "기존 테스트 결과가 없습니다. /submit/ 을 이용해주세요."},
-                status=status.HTTP_404_NOT_FOUND
+                {"message": "기존 테스트 결과가 없습니다. /submit/ 을 이용해주세요."}, status=status.HTTP_404_NOT_FOUND
             )
 
         # 3. 결과 반환

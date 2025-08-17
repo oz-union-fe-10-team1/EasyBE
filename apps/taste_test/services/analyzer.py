@@ -4,7 +4,7 @@
 
 from typing import Dict
 
-from ..constants import TYPE_INFO, MIXED_TYPE_MAPPING, TASTE_PROFILES
+from ..constants import MIXED_TYPE_MAPPING, TASTE_PROFILES, TYPE_INFO
 from .calculator import ScoreCalculator
 
 

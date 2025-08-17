@@ -11,6 +11,7 @@ from ..services import (
     ANSWER_SCORE_MAPPING,
     TASTE_QUESTIONS,
     TASTE_TYPE_IMAGES,
+    TASTE_TYPES,
     TasteTestService,
 )
 
@@ -136,8 +137,8 @@ class TasteTestServiceTest(TestCase):
 
                 # 절대 URL 형식인지 확인
                 self.assertTrue(image_url.startswith(("http://", "https://")))
-                # 올바른 경로와 파일명 확인
-                expected_path = f"/api/taste-test/images/types/{enum_type.lower()}.png"
+                # 올바른 경로와 파일명 확인 (새로운 경로)
+                expected_path = f"/static/types/{enum_type.lower()}.png"
                 self.assertTrue(image_url.endswith(expected_path))
 
     def test_get_image_url_by_enum_invalid(self):
@@ -151,8 +152,6 @@ class TasteTestServiceTest(TestCase):
 
     def test_taste_types_have_image_urls(self):
         """모든 TASTE_TYPES에 image_url이 포함되어 있는지 테스트"""
-        from ..services import TASTE_TYPES
-
         for type_name, type_info in TASTE_TYPES.items():
             with self.subTest(type_name=type_name):
                 # get_type_info 메서드를 통해 실제 URL 확인
@@ -166,8 +165,6 @@ class TasteTestServiceTest(TestCase):
 
     def test_enum_image_mapping_consistency(self):
         """enum과 이미지 매핑 일관성 테스트"""
-        from ..services import TASTE_TYPES
-
         for type_name, type_info in TASTE_TYPES.items():
             with self.subTest(type_name=type_name):
                 enum_value = type_info["enum"]
@@ -355,8 +352,6 @@ class TasteTestServiceImageTest(TestCase):
 
     def test_taste_types_have_image_urls(self):
         """모든 TASTE_TYPES에 image_url이 포함되어 있는지 테스트"""
-        from ..services import TASTE_TYPES
-
         for type_name in TASTE_TYPES.keys():
             with self.subTest(type_name=type_name):
                 type_info = TasteTestService.get_type_info(type_name)
@@ -368,8 +363,6 @@ class TasteTestServiceImageTest(TestCase):
 
     def test_enum_image_mapping_consistency(self):
         """enum과 이미지 매핑 일관성 테스트"""
-        from ..services import TASTE_TYPES
-
         for type_name, type_info in TASTE_TYPES.items():
             with self.subTest(type_name=type_name):
                 enum_value = type_info["enum"]
@@ -717,5 +710,5 @@ class TasteTestServiceIntegrationWithImageTest(TestCase):
                 self.assertTrue(image_url.endswith(expected_filename))
 
                 # 경로 형식 확인
-                expected_path = f"/api/taste-test/images/types/{expected_filename}"
+                expected_path = f"/static/types/{expected_filename}"
                 self.assertTrue(image_url.endswith(expected_path))

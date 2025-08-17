@@ -4,7 +4,7 @@
 
 from typing import Dict, List
 
-from ..constants import QUESTIONS, ANSWER_MAPPING
+from ..constants import ANSWER_MAPPING, QUESTIONS
 
 
 class AnswerValidator:
