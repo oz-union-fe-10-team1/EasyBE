@@ -228,8 +228,8 @@ EMAIL_APP_USER = os.environ.get("EMAIL_APP_USER")
 EMAIL_APP_PASSWORD = os.environ.get("EMAIL_APP_PASSWORD")
 
 # 네이버 클라우드 Object Storage 설정
-NCLOUD_ACCESS_KEY_ID = os.getenv('NCLOUD_ACCESS_KEY_ID')
-NCLOUD_SECRET_ACCESS_KEY = os.getenv('NCLOUD_SECRET_ACCESS_KEY')
-NCLOUD_REGION_NAME = os.getenv('NCLOUD_REGION_NAME', default='kr-standard')
-NCLOUD_ENDPOINT_URL = os.getenv('NCLOUD_ENDPOINT_URL', default='https://kr.object.ncloudstorage.com')
-NCLOUD_BUCKET_NAME = os.getenv('NCLOUD_BUCKET_NAME')
+NCLOUD_ACCESS_KEY_ID = os.getenv("NCLOUD_ACCESS_KEY_ID")
+NCLOUD_SECRET_ACCESS_KEY = os.getenv("NCLOUD_SECRET_ACCESS_KEY")
+NCLOUD_REGION_NAME = os.getenv("NCLOUD_REGION_NAME", default="kr-standard")
+NCLOUD_ENDPOINT_URL = os.getenv("NCLOUD_ENDPOINT_URL", default="https://kr.object.ncloudstorage.com")
+NCLOUD_BUCKET_NAME = os.getenv("NCLOUD_BUCKET_NAME")
