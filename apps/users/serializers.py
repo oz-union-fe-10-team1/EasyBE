@@ -1,4 +1,6 @@
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import PreferTasteProfile, User
 
@@ -65,3 +67,22 @@ class TasteProfileSerializer(serializers.ModelSerializer):
 class UserRestoreSerializer(serializers.Serializer):
     email = serializers.CharField()
     code = serializers.CharField()
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(
+        help_text="로그아웃할 사용자의 refresh token",
+        write_only=True,
+        style={'input_type': 'text'}
+    )
+
+    def validate(self, attrs):
+        self.token = attrs['refresh']
+        return attrs
+
+    def save(self, **kwargs):
+        try:
+            refresh_token = RefreshToken(self.token)
+            refresh_token.blacklist()
+        except TokenError:
+            raise serializers.ValidationError('Invalid or expired token')

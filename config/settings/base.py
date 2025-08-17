@@ -253,4 +253,5 @@ SIMPLE_JWT = {
     "USER_ID_CLAIM": "user_id",
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
     "TOKEN_TYPE_CLAIM": "token_type",
+    'TOKEN_BLACKLIST_ENABLED': True,  # 블랙리스트 기능 활성화
 }
