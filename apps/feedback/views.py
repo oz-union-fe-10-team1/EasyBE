@@ -51,7 +51,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @extend_schema(summary="실시간 후기", description="최근 높은 평점 피드백 4개", tags=["메인페이지"])
+    @extend_schema(summary="실시간 후기", description="최근 높은 평점 피드백 4개", tags=["후기페이지"])
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def recent_reviews(self, request):
         """실시간 후기"""
@@ -59,7 +59,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @extend_schema(summary="인기 후기", description="조회수 높은 피드백 8개", tags=["메인페이지"])
+    @extend_schema(summary="인기 후기", description="조회수 높은 피드백 8개", tags=["후기페이지"])
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def popular_reviews(self, request):
         """인기 후기"""
@@ -67,7 +67,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @extend_schema(summary="개인화 추천 후기", description="사용자 취향 기반 추천 피드백 8개", tags=["메인페이지"])
+    @extend_schema(summary="개인화 추천 후기", description="사용자 취향 기반 추천 피드백 8개", tags=["후기페이지"])
     @action(detail=False, methods=["get"])
     def personalized_reviews(self, request):
         """나와 비슷한 취향의 후기"""
