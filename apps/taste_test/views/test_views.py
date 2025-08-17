@@ -1,5 +1,5 @@
 """
-취향 테스트 관련 뷰
+취향 테스트 관련 뷰 - DRF 표준 패턴
 """
 
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
@@ -13,7 +13,7 @@ from ..serializers import (
     TasteTestAnswersSerializer,
     TasteTestResultSerializer,
 )
-from ..services import TasteTestService
+from ..services.controller_support import ControllerService
 
 
 class TasteTestQuestionsView(APIView):
@@ -42,8 +42,8 @@ class TasteTestQuestionsView(APIView):
         tags=["테스트"],
     )
     def get(self, request):
-        questions = TasteTestService.get_questions()
-        return Response(questions, status=status.HTTP_200_OK)
+        """질문 목록 조회"""
+        return ControllerService.get_test_questions()
 
 
 class TasteTestSubmitView(APIView):
@@ -85,28 +85,12 @@ class TasteTestSubmitView(APIView):
         tags=["테스트"],
     )
     def post(self, request):
-        answers = request.data.get("answers", {})
-
-        # 답변 유효성 검증
-        errors = TasteTestService.validate_answers(answers)
-        if errors:
-            return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        # 테스트 결과 계산
-        result = TasteTestService.process_taste_test(answers)
-
-        # 로그인 사용자의 경우 DB 저장
-        saved = False
-        if request.user.is_authenticated:
-            try:
-                TasteTestService.save_test_result(request.user, answers)
-                saved = True
-            except Exception:
-                # 저장 실패해도 결과는 반환
-                pass
-
-        result["saved"] = saved
-        return Response(result, status=status.HTTP_201_CREATED)
+        """테스트 답변 제출"""
+        serializer = TasteTestAnswersSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            result = ControllerService.submit_test_answers(request.user, serializer.validated_data['answers'])
+            return Response(result, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TasteTestRetakeView(APIView):
@@ -129,23 +113,15 @@ class TasteTestRetakeView(APIView):
         tags=["테스트"],
     )
     def put(self, request):
-        # 기존 결과 확인
-        try:
-            PreferenceTestResult.objects.get(user=request.user)
-        except PreferenceTestResult.DoesNotExist:
-            return Response(
-                {"message": "기존 테스트 결과가 없습니다. /submit/ 을 이용해주세요."}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        # 답변 검증
-        answers = request.data.get("answers", {})
-        errors = TasteTestService.validate_answers(answers)
-        if errors:
-            return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        # 결과 업데이트
-        TasteTestService.save_test_result(request.user, answers)
-        result = TasteTestService.process_taste_test(answers)
-        result["saved"] = True
-
-        return Response(result, status=status.HTTP_200_OK)
+        """테스트 재응시"""
+        serializer = TasteTestAnswersSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            try:
+                result = ControllerService.retake_test(request.user, serializer.validated_data['answers'])
+                return Response(result, status=status.HTTP_200_OK)
+            except PreferenceTestResult.DoesNotExist:
+                return Response(
+                    {"message": "기존 테스트 결과가 없습니다. /submit/ 을 이용해주세요."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
