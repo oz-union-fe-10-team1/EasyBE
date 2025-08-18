@@ -34,7 +34,7 @@ class UserProfileView(APIView):
                 },
             }
         },
-        tags=["사용자"],
+        tags=["마이페이지"],
     )
     def get(self, request):
         """사용자 프로필 조회"""

@@ -19,10 +19,10 @@ urlpatterns = [
     path("api/v1/cart/", include("apps.cart.urls")),
     path("api/v1/stores/", include("apps.stores.urls")),
     # swagger 및 redoc URL 패턴
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
-    path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
-    path("__debug__/", include("debug_toolbar.urls")),
+    path("api/schema", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/swagger-ui", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/schema/redoc", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path("__debug__", include("debug_toolbar.urls")),
 ]
 
 # 이미지 서빙 설정 (개발/배포 환경 모두)

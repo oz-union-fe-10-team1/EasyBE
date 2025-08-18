@@ -14,11 +14,11 @@ app_name = "taste_test"
 
 # v1 API 패턴
 v1_patterns = [
-    path("questions", TasteTestQuestionsView.as_view(), name="questions"),
-    path("submit", TasteTestSubmitView.as_view(), name="submit"),
-    path("profile", UserProfileView.as_view(), name="profile"),
-    path("retake", TasteTestRetakeView.as_view(), name="retake"),
-    path("types", TasteTypesView.as_view(), name="types"),
+    path("taste_test/questions", TasteTestQuestionsView.as_view(), name="questions"),
+    path("taste_test/submit", TasteTestSubmitView.as_view(), name="submit"),
+    path("taste_test/profile", UserProfileView.as_view(), name="profile"),
+    path("taste_test/retake", TasteTestRetakeView.as_view(), name="retake"),
+    path("taste_test/types", TasteTypesView.as_view(), name="types"),
 ]
 
 urlpatterns = [

@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -16,6 +17,11 @@ class TasteProfileView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        summary="나의 맛의 지문, 요약",
+        description="로그인한 사용자의 맛의 지문과 요약을 불러옴",
+        tags=["마이페이지"],
+    )
     def get(self, request):
         try:
             # 1. 사용자 취향 프로필 조회 또는 생성
