@@ -363,8 +363,19 @@ class FeedbackAPITest(APITestCase):
 
     def test_cannot_modify_other_user_feedback(self):
         """다른 사용자 피드백 수정 불가 테스트"""
+        import random
+        import time
+
+        # 20자 이내로 유니크한 주문번호 생성
+        # ORD + 8자리 날짜 + 8자리 랜덤 = 19자
+        today = time.strftime("%Y%m%d")  # 8자리
+        random_suffix = f"{random.randint(10000000, 99999999)}"  # 8자리
+        order_number = f"ORD{today}{random_suffix}"  # 총 19자
+
         # 다른 사용자의 주문 생성
-        other_order = Order.objects.create(user=self.other_user, total_price=Decimal("15000"))
+        other_order = Order.objects.create(
+            user=self.other_user, total_price=Decimal("15000"), order_number=order_number
+        )
         other_order_item = OrderItem.objects.create(
             order=other_order,
             product=self.product,
