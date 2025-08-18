@@ -99,7 +99,7 @@ class OrderFromCartAPITest(APITestCase):
 
         # Then: 400 에러와 함께 픽업 정보 부족 메시지를 반환
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("픽업매장을 선택해주세요.", response.data["detail"])
+        self.assertIn("상품의 픽업 정보가 없습니다.", response.data["detail"])
         self.assertEqual(Order.objects.count(), 0)  # Order should not be created
 
     def test_unauthenticated_user_cannot_create_order_from_cart(self):

@@ -25,8 +25,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"])
     def create_from_cart(self, request, *args, **kwargs):
         """
-        장바구니의 모든 상품으로 주문을 생성합니다.
-        비즈니스 로직은 OrderService에 위임합니다.
+        장바구니의 모든 상품으로 주문을 생성
         """
         try:
             order = OrderService.create_order_from_cart(user=request.user)
@@ -38,7 +37,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         except OrderCreationError as e:
             # 기타 주문 생성 관련 예외 처리
-            return Response({"detail": f"주문 생성 중 오류가 발생했습니다: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"detail": f"주문 생성 중 오류가 발생했습니다: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class OrderItemListViewSet(viewsets.ReadOnlyModelViewSet):
