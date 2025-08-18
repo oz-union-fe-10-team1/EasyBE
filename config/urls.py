@@ -10,15 +10,15 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/v1/", include("apps.orders.urls")),
     # API URL 패턴
     path("api/", include(("apps.users.urls", "users"), namespace="users")),
-    path("api/", include(("apps.products.urls", "products"), namespace="api")),
-    path("api/v1/taste-test/", include("apps.taste_test.urls")),
-    path("api/v1/cart/", include("apps.cart.urls")),
+    path("api/", include(("apps.products.urls", "products"), namespace="products")),
+    path("api/", include(("apps.taste_test.urls", "taste_test"), namespace="taste_test")),
     path("api/", include(("apps.feedback.urls", "feedback"), namespace="feedback")),
-    # swagger 및 redoc URL 패턴
+    path("api/v1/", include("apps.orders.urls")),
+    path("api/v1/cart/", include("apps.cart.urls")),
     path("api/v1/stores/", include("apps.stores.urls")),
+    # swagger 및 redoc URL 패턴
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),

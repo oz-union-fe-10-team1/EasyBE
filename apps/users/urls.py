@@ -29,9 +29,9 @@ v1_patterns = [
     # logout
     path("auth/logout", LogoutView.as_view(), name="logout"),
     # 사용자 취향 프로필 조회 및 수정
-    path("user/taste-profile/", TasteProfileView.as_view(), name="taste_profile"),
-    path("restore/", SendRecoveryCodeAPIView.as_view(), name="save_recovery_code"),
-    path("recovery/verify-email/", VerifyRecoveryCodeAPIView.as_view(), name="verify_email"),
+    path("user/taste-profile", TasteProfileView.as_view(), name="taste_profile"),
+    path("restore", SendRecoveryCodeAPIView.as_view(), name="save_recovery_code"),
+    path("recovery/verify-email", VerifyRecoveryCodeAPIView.as_view(), name="verify_email"),
 ]
 
 
