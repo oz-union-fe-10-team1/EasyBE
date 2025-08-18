@@ -9,5 +9,10 @@ class CleanCORSMiddleware:
             origins = request.META["HTTP_ORIGIN"].split(",")
             request.META["HTTP_ORIGIN"] = origins[0].strip()
 
+        # URL 끝의 슬래시 제거 (루트 경로 제외)
+        if request.path != "/" and request.path.endswith("/"):
+            request.path_info = request.path_info.rstrip("/")
+            request.path = request.path.rstrip("/")
+
         response = self.get_response(request)
         return response
