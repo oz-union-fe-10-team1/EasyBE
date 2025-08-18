@@ -13,7 +13,6 @@ class _CartProductSerializer(serializers.ModelSerializer):
     Product가 drink인지 package인지에 따라 이름과 이미지를 가져옵니다.
     """
 
-    name = serializers.CharField(source="product.name", read_only=True)
     main_image = serializers.SerializerMethodField()
 
     class Meta:
