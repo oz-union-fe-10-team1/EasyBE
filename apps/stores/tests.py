@@ -27,8 +27,8 @@ class StoreViewSetAPITest(APITestCase):
         self.store = Store.objects.create(**self.store_data)
 
         # 4. URL 설정
-        self.store_list_url = reverse("stores-list")  # DRF 라우터의 기본 이름 사용
-        self.store_detail_url = reverse("stores-detail", kwargs={"pk": self.store.pk})
+        self.store_list_url = reverse("stores:stores-list")  # DRF 라우터의 기본 이름 사용
+        self.store_detail_url = reverse("stores:stores-detail", kwargs={"pk": self.store.pk})
 
     # --- 관리자 유저 테스트 ---
     def test_admin_can_create_store(self):
