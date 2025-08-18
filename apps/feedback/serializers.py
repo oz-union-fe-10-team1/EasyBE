@@ -1,23 +1,25 @@
 # apps/feedback/serializers.py
 
-from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from .models import TASTE_TAG_CHOICES, Feedback
 
 
 class FeedbackSerializer(serializers.ModelSerializer):
-    """피드백 시리얼라이저"""
+    # 이미지 업로드용 필드 (write_only)
+    image = serializers.ImageField(write_only=True, required=False, help_text="피드백 이미지 파일")
 
-    masked_username = serializers.SerializerMethodField()
-    product = serializers.StringRelatedField(read_only=True)
+    # 응답용 필드들 (read_only)
+    image_url = serializers.URLField(read_only=True, help_text="업로드된 이미지 URL")
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    masked_username = serializers.CharField(read_only=True)
+    has_image = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Feedback
         fields = [
             "id",
-            "user",
-            "order_item",
+            "order_item",  # 필수 필드
             "rating",
             "sweetness",
             "acidity",
@@ -28,25 +30,138 @@ class FeedbackSerializer(serializers.ModelSerializer):
             "confidence",
             "comment",
             "selected_tags",
+            "image",  # 업로드용
+            "image_url",  # 응답용
+            "product_name",
+            "masked_username",
+            "has_image",
             "view_count",
-            "last_viewed_at",
             "created_at",
             "updated_at",
-            "masked_username",
-            "product",
         ]
-        read_only_fields = ["user", "view_count", "last_viewed_at", "created_at", "updated_at"]
+        read_only_fields = ["id", "view_count", "created_at", "updated_at"]
 
-    @extend_schema_field(serializers.CharField())
-    def get_masked_username(self, obj) -> str:
-        """사용자명 마스킹 처리"""
-        return obj.masked_username
+    def validate_order_item(self, value):
+        """order_item 유효성 검사"""
+        if not value:
+            raise serializers.ValidationError("order_item은 필수 필드입니다.")
+
+        # 요청한 사용자와 주문의 사용자가 일치하는지 확인 (추가 검증)
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            if value.order.user != request.user:
+                raise serializers.ValidationError("본인의 주문에 대해서만 피드백을 작성할 수 있습니다.")
+
+        return value
 
     def validate_selected_tags(self, value):
-        """태그 검증"""
+        """선택된 태그 유효성 검사"""
         if value:
             valid_tags = [choice[0] for choice in TASTE_TAG_CHOICES]
             invalid_tags = [tag for tag in value if tag not in valid_tags]
             if invalid_tags:
-                raise serializers.ValidationError(f"허용되지 않은 태그: {invalid_tags}")
+                raise serializers.ValidationError(f"허용되지 않은 태그: {invalid_tags}. " f"유효한 태그: {valid_tags}")
         return value
+
+    def validate_image(self, value):
+        """이미지 파일 유효성 검사"""
+        if value:
+            # 파일 크기 제한 (예: 5MB)
+            if value.size > 5 * 1024 * 1024:
+                raise serializers.ValidationError("이미지 크기는 5MB를 초과할 수 없습니다.")
+
+            # 파일 형식 제한
+            allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+            if value.content_type not in allowed_types:
+                raise serializers.ValidationError(f"지원되지 않는 이미지 형식입니다. 허용 형식: {allowed_types}")
+
+        return value
+
+    def create(self, validated_data):
+        """피드백 생성 및 이미지 업로드"""
+        # 이미지 파일 추출
+        image_file = validated_data.pop("image", None)
+
+        # 피드백 생성
+        feedback = Feedback.objects.create(**validated_data)
+
+        # 이미지 업로드 처리
+        if image_file:
+            success = self._upload_image(feedback, image_file)
+            if not success:
+                # 업로드 실패 시 피드백은 유지하고 경고만 로깅
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.warning(f"피드백 {feedback.id}의 이미지 업로드 실패")
+
+        return feedback
+
+    def update(self, instance, validated_data):
+        """피드백 수정 및 이미지 업데이트"""
+        image_file = validated_data.pop("image", None)
+
+        # 새 이미지가 있으면 기존 이미지 삭제 후 업로드
+        if image_file:
+            # 기존 이미지 삭제
+            if instance.image_url:
+                instance.delete_image()
+
+            # 새 이미지 업로드
+            self._upload_image(instance, image_file)
+
+        # 나머지 필드 업데이트
+        return super().update(instance, validated_data)
+
+    def _upload_image(self, feedback_instance, image_file):
+        """이미지 S3 업로드 헬퍼 메서드"""
+        try:
+            from core.utils.ncloud_manager import S3Uploader
+
+            uploader = S3Uploader()
+
+            # S3 키 생성 (feedback/{feedback_id}/{timestamp}_{filename})
+            from django.utils import timezone
+
+            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+            s3_key = f"feedback/{feedback_instance.id}/{timestamp}_{image_file.name}"
+
+            # S3에 업로드
+            image_url = uploader.upload_file(image_file, s3_key)
+
+            if image_url:
+                feedback_instance.image_url = image_url
+                feedback_instance.save(update_fields=["image_url"])
+                return True
+
+            return False
+
+        except Exception as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error(f"이미지 업로드 실패: {e}")
+            return False
+
+
+class FeedbackListSerializer(serializers.ModelSerializer):
+    """피드백 목록용 간소화된 시리얼라이저"""
+
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    masked_username = serializers.CharField(read_only=True)
+    has_image = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Feedback
+        fields = [
+            "id",
+            "rating",
+            "comment",
+            "selected_tags",
+            "image_url",
+            "product_name",
+            "masked_username",
+            "has_image",
+            "view_count",
+            "created_at",
+        ]

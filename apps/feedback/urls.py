@@ -13,7 +13,7 @@ router.register(r"feedbacks", FeedbackViewSet, basename="feedback")
 
 # v1 API 패턴
 v1_patterns = [
-    # 피드백 기본 CRUD (UI용)
+    # 피드백 기본 CRUD (이미지 업로드 지원)
     path("feedbacks/", FeedbackViewSet.as_view({"get": "list", "post": "create"}), name="feedbacks-list"),
     path(
         "feedbacks/<int:pk>/",
@@ -26,7 +26,7 @@ v1_patterns = [
         FeedbackViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"}),
         name="feedbacks-manage",
     ),
-    # 메인페이지용 피드백 조회 APIs (UI용)
+    # 메인페이지용 피드백 조회 APIs
     path("feedbacks/recent/", FeedbackViewSet.as_view({"get": "recent_reviews"}), name="feedbacks-recent"),
     path("feedbacks/popular/", FeedbackViewSet.as_view({"get": "popular_reviews"}), name="feedbacks-popular"),
     path(
@@ -36,6 +36,17 @@ v1_patterns = [
     ),
     # 사용자별 피드백
     path("feedbacks/my/", FeedbackViewSet.as_view({"get": "my_reviews"}), name="feedbacks-my"),
+    # 피드백 액션들 (이미지 관련)
+    path(
+        "feedbacks/<int:pk>/increment_view/",
+        FeedbackViewSet.as_view({"post": "increment_view"}),
+        name="feedbacks-increment-view",
+    ),
+    path(
+        "feedbacks/<int:pk>/delete_image/",
+        FeedbackViewSet.as_view({"delete": "delete_image"}),
+        name="feedbacks-delete-image",
+    ),
 ]
 
 urlpatterns = [

@@ -155,6 +155,9 @@ class Feedback(models.Model):
     # 텍스트 피드백
     comment = models.TextField(null=True, blank=True, help_text="상세 피드백 내용")
 
+    # 이미지 필드 (S3/NCP URL 저장)
+    image_url = models.URLField(null=True, blank=True, max_length=500, help_text="피드백 이미지 URL (S3/NCP 저장소)")
+
     # 맛/느낌 태그들
     selected_tags = models.JSONField(
         null=True, blank=True, help_text="선택한 맛/느낌 태그들 (예: ['과일향', '달콤한', '부드러운'])"
@@ -198,6 +201,11 @@ class Feedback(models.Model):
             return username[0] + "*" * (len(username) - 1)
         return username[:3] + "*" * (len(username) - 3)
 
+    @property
+    def has_image(self):
+        """이미지가 있는지 확인"""
+        return bool(self.image_url)
+
     def increment_view_count(self):
         """조회수 증가"""
         from django.utils import timezone
@@ -216,6 +224,19 @@ class Feedback(models.Model):
 
                 raise ValidationError(f"허용되지 않은 태그: {invalid_tags}")
 
+    def delete_image(self):
+        """이미지 삭제 (S3/NCP에서)"""
+        if self.image_url:
+            from core.utils.ncloud_manager import S3Uploader
+
+            uploader = S3Uploader()
+            success = uploader.delete_file(self.image_url)
+            if success:
+                self.image_url = None
+                self.save(update_fields=["image_url"])
+            return success
+        return True
+
     def save(self, *args, **kwargs):
         """피드백 저장 시 상품 통계 업데이트 및 취향 프로필 업데이트"""
         is_new = self.pk is None
@@ -232,7 +253,11 @@ class Feedback(models.Model):
                 self.user.taste_profile.update_from_review(self)
 
     def delete(self, *args, **kwargs):
-        """피드백 삭제 시 상품의 리뷰 수 감소"""
+        """피드백 삭제 시 상품의 리뷰 수 감소 및 이미지 삭제"""
+        # 이미지 삭제
+        self.delete_image()
+
+        # 상품 리뷰 수 감소
         product = self.order_item.product
         product.review_count -= 1
         product.save(update_fields=["review_count"])

@@ -1,8 +1,10 @@
 from datetime import date
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -114,6 +116,36 @@ class FeedbackModelTest(TestCase):
         self.assertEqual(feedback.view_count, initial_count + 1)
         self.assertIsNotNone(feedback.last_viewed_at)
 
+    # 🆕 이미지 관련 테스트 추가
+    def test_has_image_property(self):
+        """이미지 있음/없음 프로퍼티 테스트"""
+        # 이미지 있는 피드백
+        feedback_with_image = Feedback.objects.create(
+            user=self.user, order_item=self.order_item, rating=4, image_url="https://example.com/image.jpg"
+        )
+        self.assertTrue(feedback_with_image.has_image)
+
+        # 이미지 URL을 None으로 변경
+        feedback_with_image.image_url = None
+        feedback_with_image.save()
+        self.assertFalse(feedback_with_image.has_image)
+
+    @patch("core.utils.ncloud_manager.S3Uploader.delete_file")
+    def test_delete_image_method(self, mock_delete_file):
+        """이미지 삭제 메서드 테스트"""
+        mock_delete_file.return_value = True
+
+        feedback = Feedback.objects.create(
+            user=self.user, order_item=self.order_item, rating=4, image_url="https://example.com/image.jpg"
+        )
+
+        result = feedback.delete_image()
+
+        self.assertTrue(result)
+        mock_delete_file.assert_called_once_with("https://example.com/image.jpg")
+        feedback.refresh_from_db()
+        self.assertIsNone(feedback.image_url)
+
     def test_invalid_tags_validation(self):
         feedback = Feedback(
             user=self.user, order_item=self.order_item, rating=4, selected_tags=["잘못된태그", "달콤한"]
@@ -135,13 +167,22 @@ class FeedbackModelTest(TestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.review_count, initial_review_count + 1)
 
-    def test_review_count_decrement_on_delete(self):
-        feedback = Feedback.objects.create(user=self.user, order_item=self.order_item, rating=4)
+    @patch("core.utils.ncloud_manager.S3Uploader.delete_file")
+    def test_review_count_decrement_on_delete(self, mock_delete_file):
+        """피드백 삭제 시 이미지도 함께 삭제되는지 테스트"""
+        mock_delete_file.return_value = True
+
+        feedback = Feedback.objects.create(
+            user=self.user, order_item=self.order_item, rating=4, image_url="https://example.com/image.jpg"
+        )
         self.product.refresh_from_db()
         review_count_after_create = self.product.review_count
+
         feedback.delete()
+
         self.product.refresh_from_db()
         self.assertEqual(self.product.review_count, review_count_after_create - 1)
+        mock_delete_file.assert_called_once()
 
 
 class FeedbackQuerySetTest(TestCase):
@@ -217,6 +258,10 @@ class FeedbackAPITest(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(nickname="testuser", email="test@example.com", password="testpass123")
+        self.other_user = User.objects.create_user(
+            nickname="otheruser", email="other@example.com", password="testpass123"
+        )
+
         self.brewery = Brewery.objects.create(name="테스트 양조장")
         self.drink = Drink.objects.create(
             name="테스트 소주",
@@ -266,6 +311,76 @@ class FeedbackAPITest(APITestCase):
         feedback = Feedback.objects.first()
         self.assertEqual(feedback.user, self.user)
         self.assertEqual(feedback.rating, 5)
+
+    def test_create_feedback_invalid_image_format(self):
+        """잘못된 이미지 형식 테스트"""
+        self.client.force_authenticate(user=self.user)
+
+        # 텍스트 파일을 이미지로 전송
+        txt_file = SimpleUploadedFile("test.txt", b"not an image", content_type="text/plain")
+
+        data = {"order_item": self.order_item.id, "rating": 5, "image": txt_file}
+
+        url = reverse("feedback:v1:feedbacks-list")
+        response = self.client.post(url, data, format="multipart")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # 응답에서 이미지 관련 에러 확인 (Django의 기본 이미지 검증 에러 또는 우리가 추가한 검증)
+        self.assertTrue(
+            "image" in response.data or any("image" in str(error).lower() for error in response.data.values())
+        )
+
+    def test_increment_view_action(self):
+        """조회수 증가 액션 테스트"""
+        self.client.force_authenticate(user=self.user)
+        feedback = Feedback.objects.create(user=self.user, order_item=self.order_item, rating=4)
+        initial_count = feedback.view_count
+
+        # URL 패턴 수정: 하이픈 대신 언더스코어 사용
+        url = reverse("feedback:v1:feedbacks-increment-view", kwargs={"pk": feedback.id})
+        response = self.client.post(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["view_count"], initial_count + 1)
+
+    @patch("core.utils.ncloud_manager.S3Uploader.delete_file")
+    def test_delete_image_action(self, mock_delete_file):
+        """이미지 삭제 액션 테스트"""
+        mock_delete_file.return_value = True
+
+        self.client.force_authenticate(user=self.user)
+        feedback = Feedback.objects.create(
+            user=self.user, order_item=self.order_item, rating=4, image_url="https://example.com/image.jpg"
+        )
+
+        # URL 패턴 수정: 하이픈 대신 언더스코어 사용
+        url = reverse("feedback:v1:feedbacks-delete-image", kwargs={"pk": feedback.id})
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        feedback.refresh_from_db()
+        self.assertIsNone(feedback.image_url)
+
+    def test_cannot_modify_other_user_feedback(self):
+        """다른 사용자 피드백 수정 불가 테스트"""
+        # 다른 사용자의 주문 생성
+        other_order = Order.objects.create(user=self.other_user, total_price=Decimal("15000"))
+        other_order_item = OrderItem.objects.create(
+            order=other_order,
+            product=self.product,
+            quantity=1,
+            price=Decimal("15000"),
+            pickup_day=date.today(),
+            pickup_store=self.store,
+        )
+
+        feedback = Feedback.objects.create(user=self.other_user, order_item=other_order_item, rating=4)
+
+        self.client.force_authenticate(user=self.user)
+        url = reverse("feedback:v1:feedbacks-detail", kwargs={"pk": feedback.id})
+        response = self.client.put(url, {"rating": 5}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_create_feedback_unauthenticated(self):
         data = {"order_item": self.order_item.id, "rating": 5, "comment": "좋은 술입니다."}
