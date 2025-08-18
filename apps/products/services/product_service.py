@@ -122,8 +122,12 @@ class ProductService:
             return base_queryset.filter(is_award_winning=True, package__isnull=False).order_by("-order_count")[:limit]
 
         elif section_type == "makgeolli":
-            # 패키지페이지 전용: 막걸리 패키지만
-            return ProductService.get_package_products_by_alcohol_type("MAKGEOLLI", limit)
+
+            # 패키지페이지 전용: 이름에 막걸리가 포함된 패키지만
+
+            return base_queryset.filter(package__isnull=False, package__name__icontains="막걸리").order_by(
+                "-created_at"
+            )[:limit]
 
         elif section_type == "regional":
             # 패키지페이지용: 지역특산주 패키지만
