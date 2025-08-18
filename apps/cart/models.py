@@ -27,7 +27,7 @@ class CartItem(models.Model):
         verbose_name = "장바구니 항목"
         verbose_name_plural = "장바구니 항목 목록"
         db_table = "cart_items"
-        unique_together = ("user", "product")  # 사용자당 상품별로 하나씩만
+        unique_together = ("user", "product", "pickup_store", "pickup_date")
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user"]),
