@@ -8,7 +8,7 @@ app_name = "taste_test"
 v1_patterns = [
     path("taste_test/questions/", views.TasteTestQuestionsView.as_view(), name="questions"),
     path("taste_test/submit/", views.TasteTestSubmitView.as_view(), name="submit"),
-    path("taste_test/profile/", views.UserProfileView.as_view(), name="profile"),
+    path("user/taste_test/profile", views.UserProfileView.as_view(), name="profile"),
     path("taste_test/retake/", views.TasteTestRetakeView.as_view(), name="retake"),
     path("taste_test/types/", views.TasteTypesView.as_view(), name="types"),
 ]
