@@ -55,7 +55,7 @@ class KakaoLoginView(APIView):
                         "success": True,
                         "access": tokens["access_token"],
                         "refresh": tokens["refresh_token"],
-                        "user_ingo": UserSerializer(user).data,
+                        "user_info": UserSerializer(user).data,
                         "auth_type": auth_status,
                     },
                     status=status.HTTP_200_OK,
