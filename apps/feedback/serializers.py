@@ -64,16 +64,32 @@ class FeedbackSerializer(serializers.ModelSerializer):
         return value
 
     def validate_image(self, value):
-        """이미지 파일 유효성 검사"""
+        """이미지 파일 유효성 검사 - 더 유연한 방식"""
         if value:
             # 파일 크기 제한 (예: 5MB)
             if value.size > 5 * 1024 * 1024:
                 raise serializers.ValidationError("이미지 크기는 5MB를 초과할 수 없습니다.")
 
-            # 파일 형식 제한
-            allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
-            if value.content_type not in allowed_types:
-                raise serializers.ValidationError(f"지원되지 않는 이미지 형식입니다. 허용 형식: {allowed_types}")
+            # Content-Type과 파일 확장자 모두 체크
+            allowed_content_types = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+
+            allowed_extensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"]
+
+            # 파일명에서 확장자 추출
+            import os
+
+            file_extension = os.path.splitext(value.name.lower())[1]
+
+            # Content-Type 또는 확장자 중 하나라도 맞으면 허용
+            content_type_valid = value.content_type in allowed_content_types
+            extension_valid = file_extension in allowed_extensions
+
+            if not (content_type_valid or extension_valid):
+                raise serializers.ValidationError(
+                    f"지원되지 않는 이미지 형식입니다. "
+                    f"파일: {value.name} (타입: {value.content_type}), "
+                    f"허용 확장자: {allowed_extensions}"
+                )
 
         return value
 
