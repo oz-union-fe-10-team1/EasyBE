@@ -36,11 +36,16 @@ class CartItemSerializer(serializers.ModelSerializer):
     product = _CartProductSerializer(read_only=True)
     product_id = serializers.CharField(write_only=True)
     subtotal = serializers.SerializerMethodField()
-    pickup_store = StoreSerializer(read_only=True)
+
+    # WRITE-ONLY fields for creating/updating cart items
     pickup_store_id = serializers.PrimaryKeyRelatedField(
-        queryset=Store.objects.all(), write_only=True, source="pickup_store"
+        queryset=Store.objects.all(), write_only=True, source="pickup_store", required=True
     )
-    pickup_date = serializers.DateField(required=False, allow_null=True)
+    pickup_date = serializers.DateField(required=True)
+
+    # READ-ONLY fields for displaying cart items
+    pickup_store_name = serializers.CharField(source="pickup_store.name", read_only=True)
+    pickup_store_contact = serializers.CharField(source="pickup_store.contact", read_only=True)
 
     class Meta:
         model = CartItem
@@ -50,41 +55,48 @@ class CartItemSerializer(serializers.ModelSerializer):
             "product_id",
             "quantity",
             "subtotal",
-            "pickup_store",
             "pickup_store_id",
             "pickup_date",
+            "pickup_store_name",
+            "pickup_store_contact",
         ]
-        read_only_fields = ["id", "product", "subtotal", "pickup_store"]
+        read_only_fields = [
+            "id",
+            "product",
+            "subtotal",
+            "pickup_store_name",
+            "pickup_store_contact",
+        ]
 
     def get_subtotal(self, obj):
         """항목별 소계 (가격 * 수량)를 계산합니다."""
         return obj.product.price * obj.quantity
 
     def create(self, validated_data):
-        validated_data["user"] = self.context["request"].user
+        """
+        장바구니에 아이템을 추가하거나, 이미 있는 경우 수량을 업데이트합니다.
+        고유성은 user, product, pickup_store, pickup_date를 기준으로 합니다.
+        """
+        user = self.context["request"].user
         product_id = validated_data.pop("product_id")
         product = Product.objects.get(id=product_id)
-        quantity = validated_data.get("quantity")
         pickup_store = validated_data.get("pickup_store")
         pickup_date = validated_data.get("pickup_date")
+        quantity = validated_data.get("quantity", 1)
 
         cart_item, created = CartItem.objects.get_or_create(
-            user=validated_data["user"],
+            user=user,
             product=product,
-            defaults={
-                "quantity": quantity,
-                "pickup_store": pickup_store,
-                "pickup_date": pickup_date,
-            },
+            pickup_store=pickup_store,
+            pickup_date=pickup_date,
+            defaults={"quantity": quantity},
         )
+
         if not created:
-            # If item already exists, update quantity, pickup_store, and pickup_date
+            # 이미 동일한 항목(같은 상품, 같은 픽업 장소, 같은 픽업 날짜)이 존재하면 수량만 더합니다.
             cart_item.quantity += quantity
-            if pickup_store:  # Only update if provided
-                cart_item.pickup_store = pickup_store
-            if pickup_date:  # Only update if provided
-                cart_item.pickup_date = pickup_date
             cart_item.save()
+
         return cart_item
 
     def update(self, instance, validated_data):
