@@ -5,6 +5,7 @@ from apps.stores.models import Store
 from apps.stores.serializers import StoreSerializer
 
 from .models import CartItem
+from .services import CartService
 
 
 class _CartProductSerializer(serializers.ModelSerializer):
@@ -30,7 +31,8 @@ class _CartProductSerializer(serializers.ModelSerializer):
 
 class CartItemSerializer(serializers.ModelSerializer):
     """
-    장바구니 항목 CRUD를 위한 메인 시리얼라이저
+    장바구니 항목 CRUD를 위한 메인 시리얼라이저.
+    비즈니스 로직은 CartService에 위임합니다.
     """
 
     product = _CartProductSerializer(read_only=True)
@@ -73,47 +75,13 @@ class CartItemSerializer(serializers.ModelSerializer):
         return obj.product.price * obj.quantity
 
     def create(self, validated_data):
-        """
-        장바구니에 아이템을 추가하거나, 이미 있는 경우 수량을 업데이트합니다.
-        고유성은 user, product, pickup_store, pickup_date를 기준으로 합니다.
-        """
         user = self.context["request"].user
         product_id = validated_data.pop("product_id")
-        product = Product.objects.get(id=product_id)
-        pickup_store = validated_data.get("pickup_store")
-        pickup_date = validated_data.get("pickup_date")
-        quantity = validated_data.get("quantity", 1)
+        pickup_store = validated_data.pop("pickup_store")
 
-        cart_item, created = CartItem.objects.get_or_create(
-            user=user,
-            product=product,
-            pickup_store=pickup_store,
-            pickup_date=pickup_date,
-            defaults={"quantity": quantity},
+        return CartService.add_or_update_item(
+            user=user, product_id=product_id, pickup_store=pickup_store, **validated_data
         )
 
-        if not created:
-            # 이미 동일한 항목(같은 상품, 같은 픽업 장소, 같은 픽업 날짜)이 존재하면 수량만 더합니다.
-            cart_item.quantity += quantity
-            cart_item.save()
-
-        return cart_item
-
     def update(self, instance, validated_data):
-        """
-        수량, 픽업 매장, 픽업 날짜 업데이트 로직을 커스터마이징합니다.
-        수량이 0 이하로 들어오면 항목을 삭제하고, 그렇지 않으면 수량을 업데이트합니다.
-        """
-        quantity = validated_data.get("quantity", instance.quantity)
-        pickup_store = validated_data.get("pickup_store", instance.pickup_store)
-        pickup_date = validated_data.get("pickup_date", instance.pickup_date)
-
-        if quantity <= 0:
-            instance.delete()
-            return None  # 삭제된 경우 아무것도 반환하지 않음
-        else:
-            instance.quantity = quantity
-            instance.pickup_store = pickup_store
-            instance.pickup_date = pickup_date
-            instance.save()
-            return instance
+        return CartService.update_item_quantity(cart_item=instance, quantity=validated_data.get("quantity"))
