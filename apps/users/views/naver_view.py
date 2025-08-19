@@ -61,9 +61,9 @@ class NaverLoginView(APIView):
                 return Response(
                     {
                         "success": True,
-                        "access_token": tokens["access_token"],
-                        "refresh_token": tokens["refresh_token"],
-                        "user": UserSerializer(user).data,
+                        "access": tokens["access_token"],
+                        "refresh": tokens["refresh_token"],
+                        "user_info": UserSerializer(user).data,
                         "auth_type": auth_status,
                     },
                     status=status.HTTP_200_OK,
