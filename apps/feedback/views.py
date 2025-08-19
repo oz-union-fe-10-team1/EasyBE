@@ -105,7 +105,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def recent_reviews(self, request):
         """실시간 후기"""
-        queryset = Feedback.objects.recent().high_rated().order_by('-created_at')[:4]
+        queryset = Feedback.objects.recent().high_rated().order_by("-created_at")[:4]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
