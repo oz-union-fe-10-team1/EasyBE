@@ -19,22 +19,7 @@ class UserProfileView(APIView):
     @extend_schema(
         summary="사용자 프로필",
         description="로그인한 사용자의 기본 정보와 테스트 완료 여부를 조회합니다. 테스트 완료시 기본 결과 정보 포함.",
-        responses={
-            200: {
-                "description": "사용자 프로필",
-                "example": {
-                    "user": "사용자닉네임",
-                    "has_test": True,
-                    "id": 1,
-                    "prefer_taste": "SWEET_FRUIT",
-                    "prefer_taste_display": "달콤과일파",
-                    "taste_description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!",
-                    "image_url": "http://localhost:8000/images/types/sweet_fruit.png",
-                    "created_at": "2024-01-01T00:00:00Z",
-                },
-            }
-        },
-        tags=["사용자"],
+        tags=["마이페이지"],
     )
     def get(self, request):
         """사용자 프로필 조회"""

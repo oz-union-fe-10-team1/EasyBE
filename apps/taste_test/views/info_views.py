@@ -19,23 +19,6 @@ class TasteTypesView(APIView):
     @extend_schema(
         summary="취향 유형 목록",
         description="9가지 취향 유형의 상세 정보를 조회합니다",
-        responses={
-            200: {
-                "description": "유형 목록",
-                "example": {
-                    "types": [
-                        {
-                            "name": "달콤과일파",
-                            "enum": "SWEET_FRUIT",
-                            "description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!",
-                            "characteristics": ["달콤함", "과일향", "로맨틱", "부드러움"],
-                            "image_url": "http://localhost:8000/images/types/sweet_fruit.png",
-                        }
-                    ],
-                    "total": 9,
-                },
-            }
-        },
         tags=["정보"],
     )
     def get(self, request):
