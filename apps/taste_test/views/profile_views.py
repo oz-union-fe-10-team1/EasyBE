@@ -17,7 +17,7 @@ class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        summary="사용자 프로필",
+        summary="사용자의 입맛 테스트 조회",
         description="로그인한 사용자의 기본 정보와 테스트 완료 여부를 조회합니다. 테스트 완료시 기본 결과 정보 포함.",
         tags=["마이페이지"],
     )
