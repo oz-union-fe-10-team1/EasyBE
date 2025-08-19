@@ -26,7 +26,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
 
     queryset = Feedback.objects.all()
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser, JSONParser]  # 이미지 업로드 지원
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ["rating", "user"]
     ordering_fields = ["created_at", "rating", "view_count"]
@@ -41,15 +41,11 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         """액션별 권한 설정"""
         if self.action in ["retrieve", "recent_reviews", "popular_reviews", "personalized_reviews"]:
-            permission_classes = [AllowAny]
-        else:
-            permission_classes = [IsAuthenticated]
-
-        return [permission() for permission in permission_classes]
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def perform_create(self, serializer):
         """피드백 생성 시 사용자 정보 및 검증"""
-        # order_item 필드 확인
         order_item = serializer.validated_data.get("order_item")
 
         if not order_item:
@@ -75,12 +71,19 @@ class FeedbackViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
-        """피드백 수정 (이미지 교체 포함) - 권한 검증"""
+        """피드백 수정 (이미지 교체/삭제 포함) - 권한 검증"""
         instance = self.get_object()
 
         # 본인의 피드백만 수정 가능
         if instance.user != request.user:
             return Response({"error": "본인의 피드백만 수정할 수 있습니다."}, status=status.HTTP_403_FORBIDDEN)
+
+        # 이미지 삭제 요청 처리 (image: null로 전송)
+        if "image" in request.data and request.data["image"] is None:
+            if instance.image_url:
+                instance.delete_image()
+            # image 필드를 데이터에서 제거 (시리얼라이저 검증 오류 방지)
+            request.data.pop("image", None)
 
         return super().update(request, *args, **kwargs)
 
@@ -95,7 +98,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
-        """피드백 상세 조회 시 조회수 증가"""
+        """피드백 상세 조회 시 조회수 자동 증가"""
         instance = self.get_object()
         instance.increment_view_count()
         serializer = self.get_serializer(instance)
@@ -132,30 +135,3 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         queryset = Feedback.objects.filter(user=request.user)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-    @extend_schema(summary="조회수 증가", description="피드백 조회수 1 증가", tags=["피드백"])
-    @action(detail=True, methods=["post"])
-    def increment_view(self, request, pk=None):
-        """조회수 증가"""
-        feedback = self.get_object()
-        feedback.increment_view_count()
-        return Response({"view_count": feedback.view_count})
-
-    @extend_schema(summary="이미지 삭제", description="피드백 이미지만 삭제", tags=["피드백"])
-    @action(detail=True, methods=["delete"])
-    def delete_image(self, request, pk=None):
-        """이미지만 삭제"""
-        feedback = self.get_object()
-
-        # 본인의 피드백만 수정 가능
-        if feedback.user != request.user:
-            return Response({"error": "본인의 피드백만 수정할 수 있습니다."}, status=status.HTTP_403_FORBIDDEN)
-
-        if feedback.image_url:
-            success = feedback.delete_image()
-            if success:
-                return Response({"message": "이미지가 삭제되었습니다."})
-            else:
-                return Response({"error": "이미지 삭제에 실패했습니다."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            return Response({"error": "삭제할 이미지가 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
