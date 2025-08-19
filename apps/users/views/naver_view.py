@@ -29,18 +29,14 @@ class NaverLoginView(APIView):
         state = serializer.validated_data["state"]
 
         try:
-            # 1. State 검증 및 소비
-            # if not OAuthStateService.verify_and_consume_state(state):
-            #     return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
-
-            # 2. 네이버에서 access token 획득
+            # 1. 네이버에서 access token 획득
             token_data = NaverService.get_access_token(authorization_code, state)
             access_token = token_data["access_token"]
 
-            # 3. access token으로 네이버 사용자 정보 획득
+            # 2. access token으로 네이버 사용자 정보 획득
             naver_user_data = NaverService.get_user_info(access_token)
 
-            # 4. 네이버 데이터 파싱
+            # 3. 네이버 데이터 파싱
             if naver_user_data.get("resultcode") != "00":
                 raise Exception(f"네이버 사용자 정보 조회 실패: {naver_user_data.get('message')}")
 
@@ -52,23 +48,42 @@ class NaverLoginView(APIView):
             if not naver_id:
                 raise Exception("네이버 ID를 가져올 수 없습니다.")
 
-            # 5. 사용자 생성/조회 및 계정 통합
-            user, auth_type = SocialAuthService.authenticate_social_user(
+            # 4. 사용자 인증 및 성인 인증 상태 확인
+            user, auth_status = SocialAuthService.authenticate_social_user(
                 provider="NAVER", provider_id=naver_id, user_info={"email": email, "nickname": nickname}
             )
 
-            # 6. JWT 토큰 생성
-            tokens = JWTService.create_tokens_for_user(user)
+            # 5. 성인 인증 여부에 따른 분기 처리
+            if auth_status in ["existing_verified", "linked_verified"]:
+                # 성인 인증 완료 → 바로 로그인
+                tokens = JWTService.create_tokens_for_user(user)
 
-            # 7. 응답 데이터 구성
-            response_data = {
-                "access_token": tokens["access_token"],
-                "refresh_token": tokens["refresh_token"],
-                "user": UserSerializer(user).data,
-                "auth_type": auth_type,
-            }
+                return Response(
+                    {
+                        "success": True,
+                        "access_token": tokens["access_token"],
+                        "refresh_token": tokens["refresh_token"],
+                        "user": UserSerializer(user).data,
+                        "auth_type": auth_status,
+                    },
+                    status=status.HTTP_200_OK,
+                )
 
-            return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                # 성인 인증 필요 → 임시 토큰 발급
+                temp_token = SocialAuthService.create_adult_verification_token(
+                    provider="NAVER", provider_id=naver_id, nickname=nickname
+                )
+
+                return Response(
+                    {
+                        "success": True,
+                        "status": "adult_verification_required",
+                        "temp_token": temp_token,
+                        "message": "성인 인증이 필요합니다.",
+                    },
+                    status=status.HTTP_200_OK,
+                )
 
         except Exception as e:
             return Response(

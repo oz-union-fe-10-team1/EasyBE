@@ -26,42 +26,56 @@ class KakaoLoginView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         authorization_code = serializer.validated_data["code"]
-        # state = serializer.validated_data["state"]
 
         try:
-            # 1. State 검증 및 소비
-            # if not OAuthStateService.verify_and_consume_state(state):
-            #     return Response({"error": "Invalid or expired state"}, status=status.HTTP_400_BAD_REQUEST)
-
-            # 2. 카카오에서 access token 획득
+            # 1. 카카오에서 access token 획득
             token_data = KakaoService.get_access_token(authorization_code)
             access_token = token_data["access_token"]
 
-            # 3. access token으로 카카오 사용자 정보 획득
+            # 2. access token으로 카카오 사용자 정보 획득
             kakao_user_data = KakaoService.get_user_info(access_token)
 
-            # 4. 카카오 데이터 파싱
+            # 3. 카카오 데이터 파싱
             kakao_id = str(kakao_user_data["id"])
             email = kakao_user_data.get("kakao_account", {}).get("email")
             nickname = kakao_user_data.get("kakao_account", {}).get("profile", {}).get("nickname", "사용자")
 
-            # 5. 사용자 생성/조회 및 계정 통합
-            user, auth_type = SocialAuthService.authenticate_social_user(
+            # 4. 사용자 인증 및 성인 인증 상태 확인
+            user, auth_status = SocialAuthService.authenticate_social_user(
                 provider="KAKAO", provider_id=kakao_id, user_info={"email": email, "nickname": nickname}
             )
 
-            # 6. JWT 토큰 생성
-            tokens = JWTService.create_tokens_for_user(user)
+            # 5. 성인 인증 여부에 따른 분기 처리
+            if auth_status in ["existing_verified", "linked_verified"]:
+                # 성인 인증 완료 → 바로 로그인
+                tokens = JWTService.create_tokens_for_user(user)
 
-            # 7. 응답 데이터 구성
-            response_data = {
-                "access_token": tokens["access_token"],
-                "refresh_token": tokens["refresh_token"],
-                "user": UserSerializer(user).data,
-                "auth_type": auth_type,
-            }
+                return Response(
+                    {
+                        "success": True,
+                        "access_token": tokens["access_token"],
+                        "refresh_token": tokens["refresh_token"],
+                        "user": UserSerializer(user).data,
+                        "auth_type": auth_status,
+                    },
+                    status=status.HTTP_200_OK,
+                )
 
-            return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                # 성인 인증 필요 → 임시 토큰 발급
+                temp_token = SocialAuthService.create_adult_verification_token(
+                    provider="KAKAO", provider_id=kakao_id, nickname=nickname
+                )
+
+                return Response(
+                    {
+                        "success": True,
+                        "status": "adult_verification_required",
+                        "temp_token": temp_token,
+                        "message": "성인 인증이 필요합니다.",
+                    },
+                    status=status.HTTP_200_OK,
+                )
 
         except Exception as e:
             return Response(
