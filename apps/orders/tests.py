@@ -53,7 +53,7 @@ class OrderFromCartAPITest(APITestCase):
         self.store2 = Store.objects.create(name="Store 2", address="Address 2")
 
         # URL
-        self.create_order_url = "/api/v1/orders/create_from_cart/"
+        self.create_order_url = reverse("orders:order-create-from-cart")
 
     def test_create_order_from_cart_success(self):
         """장바구니에서 주문 생성 성공 테스트"""
