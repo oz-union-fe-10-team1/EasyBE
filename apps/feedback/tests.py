@@ -50,12 +50,10 @@ class FeedbackModelTest(TestCase):
 
         self.order = Order.objects.create(user=self.user, total_price=Decimal("15000"), status=Order.Status.COMPLETED)
 
-        # 매장 생성
         self.store = Store.objects.create(
             name="테스트 매장", address="서울시 테스트구 테스트동", contact="010-1234-5678"
         )
 
-        # 주문 아이템 생성
         self.order_item = OrderItem.objects.create(
             order=self.order,
             product=self.product,
@@ -116,16 +114,13 @@ class FeedbackModelTest(TestCase):
         self.assertEqual(feedback.view_count, initial_count + 1)
         self.assertIsNotNone(feedback.last_viewed_at)
 
-    # 🆕 이미지 관련 테스트 추가
     def test_has_image_property(self):
         """이미지 있음/없음 프로퍼티 테스트"""
-        # 이미지 있는 피드백
         feedback_with_image = Feedback.objects.create(
             user=self.user, order_item=self.order_item, rating=4, image_url="https://example.com/image.jpg"
         )
         self.assertTrue(feedback_with_image.has_image)
 
-        # 이미지 URL을 None으로 변경
         feedback_with_image.image_url = None
         feedback_with_image.save()
         self.assertFalse(feedback_with_image.has_image)
@@ -205,7 +200,6 @@ class FeedbackQuerySetTest(TestCase):
             description="테스트 상품 설명",
             description_image_url="http://example.com/image.jpg",
         )
-        # 매장 생성
         self.store = Store.objects.create(
             name="테스트 매장", address="서울시 테스트구 테스트동", contact="010-1234-5678"
         )
@@ -277,7 +271,6 @@ class FeedbackAPITest(APITestCase):
             description="테스트 상품 설명",
             description_image_url="http://example.com/image.jpg",
         )
-        # 매장 생성
         self.store = Store.objects.create(
             name="테스트 매장", address="서울시 테스트구 테스트동", contact="010-1234-5678"
         )
@@ -316,46 +309,29 @@ class FeedbackAPITest(APITestCase):
         """잘못된 이미지 형식 테스트"""
         self.client.force_authenticate(user=self.user)
 
-        # 텍스트 파일을 이미지로 전송
         txt_file = SimpleUploadedFile("test.txt", b"not an image", content_type="text/plain")
-
         data = {"order_item": self.order_item.id, "rating": 5, "image": txt_file}
 
         url = reverse("feedback:v1:feedbacks-list")
         response = self.client.post(url, data, format="multipart")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        # 응답에서 이미지 관련 에러 확인 (Django의 기본 이미지 검증 에러 또는 우리가 추가한 검증)
         self.assertTrue(
             "image" in response.data or any("image" in str(error).lower() for error in response.data.values())
         )
 
-    def test_increment_view_action(self):
-        """조회수 증가 액션 테스트"""
-        self.client.force_authenticate(user=self.user)
-        feedback = Feedback.objects.create(user=self.user, order_item=self.order_item, rating=4)
-        initial_count = feedback.view_count
-
-        # URL 패턴 수정: 하이픈 대신 언더스코어 사용
-        url = reverse("feedback:v1:feedbacks-increment-view", kwargs={"pk": feedback.id})
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["view_count"], initial_count + 1)
-
-    @patch("core.utils.ncloud_manager.S3Uploader.delete_file")
-    def test_delete_image_action(self, mock_delete_file):
-        """이미지 삭제 액션 테스트"""
-        mock_delete_file.return_value = True
-
+    def test_update_feedback_with_image_deletion(self):
+        """PATCH로 이미지 삭제 테스트 (image: null)"""
         self.client.force_authenticate(user=self.user)
         feedback = Feedback.objects.create(
             user=self.user, order_item=self.order_item, rating=4, image_url="https://example.com/image.jpg"
         )
 
-        # URL 패턴 수정: 하이픈 대신 언더스코어 사용
-        url = reverse("feedback:v1:feedbacks-delete-image", kwargs={"pk": feedback.id})
-        response = self.client.delete(url)
+        url = reverse("feedback:v1:feedbacks-detail", kwargs={"pk": feedback.id})
+        data = {"image": None}  # 이미지 삭제 요청
+
+        with patch("core.utils.ncloud_manager.S3Uploader.delete_file", return_value=True):
+            response = self.client.patch(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         feedback.refresh_from_db()
@@ -366,13 +342,10 @@ class FeedbackAPITest(APITestCase):
         import random
         import time
 
-        # 20자 이내로 유니크한 주문번호 생성
-        # ORD + 8자리 날짜 + 8자리 랜덤 = 19자
-        today = time.strftime("%Y%m%d")  # 8자리
-        random_suffix = f"{random.randint(10000000, 99999999)}"  # 8자리
-        order_number = f"ORD{today}{random_suffix}"  # 총 19자
+        today = time.strftime("%Y%m%d")
+        random_suffix = f"{random.randint(10000000, 99999999)}"
+        order_number = f"ORD{today}{random_suffix}"
 
-        # 다른 사용자의 주문 생성
         other_order = Order.objects.create(
             user=self.other_user, total_price=Decimal("15000"), order_number=order_number
         )
@@ -400,6 +373,7 @@ class FeedbackAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_retrieve_feedback_increments_view_count(self):
+        """상세 조회 시 자동으로 조회수 증가 테스트"""
         feedback = Feedback.objects.create(user=self.user, order_item=self.order_item, rating=4)
         initial_count = feedback.view_count
         url = reverse("feedback:v1:feedbacks-detail", kwargs={"pk": feedback.id})
