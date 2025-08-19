@@ -39,11 +39,10 @@ class GoogleLoginView(APIView):
             # 3. 구글 데이터 파싱
             google_id = str(google_user_data["id"])
             email = google_user_data.get("email")
-            name = google_user_data.get("name", "사용자")
 
             # 4. 사용자 인증 및 성인 인증 상태 확인
             user, auth_status = SocialAuthService.authenticate_social_user(
-                provider="GOOGLE", provider_id=google_id, user_info={"email": email, "nickname": name}
+                provider="GOOGLE", provider_id=google_id, user_info={"email": email}
             )
 
             # 5. 성인 인증 여부에 따른 분기 처리
@@ -64,9 +63,7 @@ class GoogleLoginView(APIView):
 
             else:
                 # 성인 인증 필요 → 임시 토큰 발급
-                temp_token = SocialAuthService.create_adult_verification_token(
-                    provider="GOOGLE", provider_id=google_id, nickname=name
-                )
+                temp_token = SocialAuthService.create_adult_verification_token(provider="GOOGLE", provider_id=google_id)
 
                 return Response(
                     {

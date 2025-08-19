@@ -15,6 +15,7 @@ from .views import (
     NaverLoginView,
     OAuthStateView,
     TasteProfileView,
+    UserProfileView,
 )
 from .views.logout_view import LogoutView
 
@@ -31,12 +32,14 @@ v1_patterns = [
     path(
         "auth/adult-verification/complete", CompleteAdultVerificationView.as_view(), name="complete_adult_verification"
     ),
-    # jwt token refresh
+    # JWT 토큰 관련
     path("auth/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
-    # logout
     path("auth/logout", LogoutView.as_view(), name="logout"),
-    # 사용자 취향 프로필 조회 및 수정
-    path("user/taste-profile/", TasteProfileView.as_view(), name="taste_profile"),
+    # 사용자 프로필 관리
+    path("profile/", UserProfileView.as_view(), name="user_profile"),
+    # 사용자 취향 프로필
+    path("taste-profile/", TasteProfileView.as_view(), name="taste_profile"),
+    # 계정 복구
     path("restore/", SendRecoveryCodeAPIView.as_view(), name="save_recovery_code"),
     path("recovery/verify-email/", VerifyRecoveryCodeAPIView.as_view(), name="verify_email"),
 ]
