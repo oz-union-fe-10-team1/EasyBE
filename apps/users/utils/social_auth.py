@@ -7,6 +7,8 @@ from django.db import transaction
 
 from apps.users.models import SocialAccount, User
 
+from ..utils.nickname_generator import NicknameGenerator
+
 
 class SocialAuthService:
     @staticmethod
@@ -18,7 +20,6 @@ class SocialAuthService:
         소셜 로그인 인증 + 성인 인증 확인
         """
         email = user_info.get("email")
-        nickname = user_info.get("nickname")
 
         # 1. 기존 소셜 계정 확인
         try:
@@ -41,7 +42,7 @@ class SocialAuthService:
 
         # 3-1. 기존 사용자가 있다면 새 소셜 계정 연결
         if existing_user:
-            social_account = SocialAccount.objects.create(
+            SocialAccount.objects.create(
                 user=existing_user, provider=provider, provider_id=provider_id, provider_email=email
             )
 
@@ -60,7 +61,6 @@ class SocialAuthService:
         성인 인증 완료 후 계정 생성/업데이트
         """
         email = user_info.get("email")
-        nickname = user_info.get("nickname")
 
         # 1. 기존 소셜 계정이 있는지 확인
         try:
@@ -89,8 +89,8 @@ class SocialAuthService:
 
             return existing_user
 
-        # 3. 새 사용자 생성
-        unique_nickname = SocialAuthService.generate_unique_nickname(nickname)
+        # 3. 새 사용자 생성 - 랜덤 닉네임으로
+        unique_nickname = NicknameGenerator.generate_unique_nickname(User)
 
         user = User.objects.create_user(nickname=unique_nickname, email=email)
 
@@ -102,32 +102,11 @@ class SocialAuthService:
         return user
 
     @staticmethod
-    def create_adult_verification_token(provider: str, provider_id: str, nickname: str = "") -> str:
+    def create_adult_verification_token(provider: str, provider_id: str) -> str:
         """성인 인증용 임시 토큰 생성"""
         from core.utils.temp_token import TempTokenManager
 
-        return TempTokenManager.create_adult_verification_token(
-            social_id=provider_id, provider=provider, nickname=nickname
-        )
-
-    @staticmethod
-    def generate_unique_nickname(base_nickname):
-        """유니크한 닉네임 생성"""
-        if not base_nickname:
-            base_nickname = "사용자"
-
-        # 원본 닉네임이 사용 가능한지 확인
-        if not User.objects.filter(nickname=base_nickname).exists():
-            return base_nickname
-
-        # 숫자를 붙여서 유니크한 닉네임 생성
-        for i in range(1, 1000):
-            candidate = f"{base_nickname}{i}"
-            if not User.objects.filter(nickname=candidate).exists():
-                return candidate
-
-        # 최후의 수단 (랜덤 숫자)
-        return f"{base_nickname}{random.randint(1000, 9999)}"
+        return TempTokenManager.create_adult_verification_token(social_id=provider_id, provider=provider)
 
     @staticmethod
     def link_social_account(user, provider, provider_id, provider_email=None):

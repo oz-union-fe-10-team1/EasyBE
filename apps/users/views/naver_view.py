@@ -43,14 +43,13 @@ class NaverLoginView(APIView):
             response_data = naver_user_data.get("response", {})
             naver_id = response_data.get("id")
             email = response_data.get("email")
-            nickname = response_data.get("nickname", "사용자")
 
             if not naver_id:
                 raise Exception("네이버 ID를 가져올 수 없습니다.")
 
             # 4. 사용자 인증 및 성인 인증 상태 확인
             user, auth_status = SocialAuthService.authenticate_social_user(
-                provider="NAVER", provider_id=naver_id, user_info={"email": email, "nickname": nickname}
+                provider="NAVER", provider_id=naver_id, user_info={"email": email}
             )
 
             # 5. 성인 인증 여부에 따른 분기 처리
@@ -71,9 +70,7 @@ class NaverLoginView(APIView):
 
             else:
                 # 성인 인증 필요 → 임시 토큰 발급
-                temp_token = SocialAuthService.create_adult_verification_token(
-                    provider="NAVER", provider_id=naver_id, nickname=nickname
-                )
+                temp_token = SocialAuthService.create_adult_verification_token(provider="NAVER", provider_id=naver_id)
 
                 return Response(
                     {
