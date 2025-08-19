@@ -15,6 +15,7 @@ from .views import (
     NaverLoginView,
     OAuthStateView,
     TasteProfileView,
+    UserDeleteView,
     UserProfileView,
 )
 from .views.logout_view import LogoutView
@@ -36,9 +37,10 @@ v1_patterns = [
     path("auth/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/logout", LogoutView.as_view(), name="logout"),
     # 사용자 프로필 관리
-    path("profile/", UserProfileView.as_view(), name="user_profile"),
+    path("user/profile/", UserProfileView.as_view(), name="user_profile"),
+    path("user/delete/", UserDeleteView.as_view(), name="user_delete"),  # 일관성 있게 수정
     # 사용자 취향 프로필
-    path("taste-profile/", TasteProfileView.as_view(), name="taste_profile"),
+    path("user/taste-profile/", TasteProfileView.as_view(), name="taste_profile"),
     # 계정 복구
     path("restore/", SendRecoveryCodeAPIView.as_view(), name="save_recovery_code"),
     path("recovery/verify-email/", VerifyRecoveryCodeAPIView.as_view(), name="verify_email"),

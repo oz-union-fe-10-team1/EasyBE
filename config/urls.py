@@ -16,7 +16,7 @@ urlpatterns = [
     path("api/v1/orders/", include("apps.orders.urls", namespace="orders")),
     path("api/v1/cart/", include("apps.cart.urls", namespace="cart")),
     path("api/v1/stores/", include("apps.stores.urls", namespace="stores")),
-    path("api/v1/taste-test/", include("apps.taste_test.urls", namespace="taste_test")),
+    path("api/", include("apps.taste_test.urls", namespace="taste_test")),
     # Swagger and Redoc URL patterns
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),

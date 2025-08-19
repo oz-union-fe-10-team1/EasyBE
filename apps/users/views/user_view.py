@@ -1,11 +1,12 @@
 # apps/users/views/user_view.py
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from ..models import User
 from ..serializers import UserSerializer, UserUpdateSerializer
 
 
@@ -56,5 +57,35 @@ class UserProfileView(APIView):
 
         return Response(
             {"success": True, "message": "프로필이 성공적으로 변경되었습니다.", "user_info": UserSerializer(user).data},
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(
+    tags=["마이페이지"],
+    summary="회원 탈퇴",
+    description="현재 로그인한 사용자의 계정을 탈퇴 처리합니다. 14일 이내 복구 가능합니다.",
+    responses={200: {"description": "탈퇴 성공"}, 400: {"description": "이미 탈퇴된 계정"}},
+)
+class UserDeleteView(APIView):
+    """회원 탈퇴 API"""
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request: Request) -> Response:
+        """회원 탈퇴"""
+        user = request.user
+
+        # 이미 탈퇴된 계정인지 확인
+        if user.is_deleted:
+            return Response(
+                {"success": False, "message": "이미 탈퇴 처리된 계정입니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 탈퇴 처리
+        user.soft_delete()
+
+        return Response(
+            {"success": True, "message": "회원 탈퇴가 완료되었습니다. 14일 이내에 복구 가능합니다."},
             status=status.HTTP_200_OK,
         )

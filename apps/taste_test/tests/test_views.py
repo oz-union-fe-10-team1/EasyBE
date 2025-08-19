@@ -23,7 +23,7 @@ class TasteTestAPITest(APITestCase):
 
     def test_get_questions(self):
         """질문 목록 조회 테스트 - 새로운 컨트롤러 패턴"""
-        url = reverse("taste_test:questions")
+        url = reverse("taste_test:v1:questions")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -36,7 +36,7 @@ class TasteTestAPITest(APITestCase):
 
     def test_submit_answers_success(self):
         """답변 제출 성공 테스트 - DRF 표준 패턴"""
-        url = reverse("taste_test:submit")
+        url = reverse("taste_test:v1:submit")
         data = {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "A"}}
 
         response = self.client.post(url, data, format="json")
@@ -57,7 +57,7 @@ class TasteTestAPITest(APITestCase):
 
     def test_submit_answers_validation_error(self):
         """답변 제출 검증 에러 테스트 - Serializer 검증"""
-        url = reverse("taste_test:submit")
+        url = reverse("taste_test:v1:submit")
 
         # 누락된 답변
         data = {"answers": {"Q1": "A", "Q2": "B"}}
@@ -71,7 +71,7 @@ class TasteTestAPITest(APITestCase):
         """인증 없이 답변 제출 테스트"""
         self.client.force_authenticate(user=None)  # 인증 해제
 
-        url = reverse("taste_test:submit")
+        url = reverse("taste_test:v1:submit")
         data = {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}}
 
         response = self.client.post(url, data, format="json")
@@ -89,7 +89,7 @@ class TasteTestAPITest(APITestCase):
             prefer_taste="SWEET_FRUIT",
         )
 
-        url = reverse("taste_test:profile")
+        url = reverse("taste_test:v1:profile")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -110,7 +110,7 @@ class TasteTestAPITest(APITestCase):
 
     def test_get_profile_without_result(self):
         """프로필 조회 (테스트 결과 없음)"""
-        url = reverse("taste_test:profile")
+        url = reverse("taste_test:v1:profile")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -123,7 +123,7 @@ class TasteTestAPITest(APITestCase):
 
     def test_get_types(self):
         """취향 유형 목록 테스트 - 새로운 ControllerService.get_taste_types_data"""
-        url = reverse("taste_test:types")
+        url = reverse("taste_test:v1:types")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -152,7 +152,7 @@ class TasteTestAPITest(APITestCase):
             prefer_taste="SWEET_FRUIT",
         )
 
-        url = reverse("taste_test:retake")
+        url = reverse("taste_test:v1:retake")
         data = {"answers": {"Q1": "B", "Q2": "A", "Q3": "B", "Q4": "A", "Q5": "B", "Q6": "A"}}
 
         response = self.client.put(url, data, format="json")
@@ -171,7 +171,7 @@ class TasteTestAPITest(APITestCase):
 
     def test_retake_no_existing_result(self):
         """재테스트 - 기존 결과 없음"""
-        url = reverse("taste_test:retake")
+        url = reverse("taste_test:v1:retake")
         data = {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}}
 
         response = self.client.put(url, data, format="json")
@@ -188,7 +188,7 @@ class TasteTestAPITest(APITestCase):
             prefer_taste="SWEET_FRUIT",
         )
 
-        url = reverse("taste_test:retake")
+        url = reverse("taste_test:v1:retake")
         # 잘못된 답변 데이터
         data = {"answers": {"Q1": "C", "Q2": "B"}}
 
@@ -200,7 +200,7 @@ class TasteTestAPITest(APITestCase):
 
     def test_submit_invalid_answers(self):
         """잘못된 답변 제출 테스트 - Serializer 검증"""
-        url = reverse("taste_test:submit")
+        url = reverse("taste_test:v1:submit")
 
         # 부족한 답변
         data = {"answers": {"Q1": "A", "Q2": "B"}}
@@ -217,14 +217,14 @@ class TasteTestAPITest(APITestCase):
     def test_profile_unauthenticated(self):
         """인증 없이 프로필 조회 시 401 에러"""
         self.client.force_authenticate(user=None)
-        url = reverse("taste_test:profile")
+        url = reverse("taste_test:v1:profile")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_retake_unauthenticated(self):
         """인증 없이 재테스트 시 401 에러"""
         self.client.force_authenticate(user=None)
-        url = reverse("taste_test:retake")
+        url = reverse("taste_test:v1:retake")
         data = {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "B"}}
         response = self.client.put(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -232,7 +232,7 @@ class TasteTestAPITest(APITestCase):
     def test_questions_anonymous_access(self):
         """질문 목록 익명 접근 테스트"""
         self.client.force_authenticate(user=None)
-        url = reverse("taste_test:questions")
+        url = reverse("taste_test:v1:questions")
         response = self.client.get(url)
 
         # AllowAny 권한이므로 익명 사용자도 접근 가능
@@ -241,7 +241,7 @@ class TasteTestAPITest(APITestCase):
     def test_types_anonymous_access(self):
         """취향 유형 목록 익명 접근 테스트"""
         self.client.force_authenticate(user=None)
-        url = reverse("taste_test:types")
+        url = reverse("taste_test:v1:types")
         response = self.client.get(url)
 
         # AllowAny 권한이므로 익명 사용자도 접근 가능
@@ -259,25 +259,25 @@ class TasteTestViewFlowTest(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         # 1. 질문 조회
-        questions_url = reverse("taste_test:questions")
+        questions_url = reverse("taste_test:v1:questions")
         questions_response = self.client.get(questions_url)
         self.assertEqual(questions_response.status_code, status.HTTP_200_OK)
 
         # 2. 답변 제출
-        submit_url = reverse("taste_test:submit")
+        submit_url = reverse("taste_test:v1:submit")
         submit_data = {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "A"}}
         submit_response = self.client.post(submit_url, submit_data, format="json")
         self.assertEqual(submit_response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(submit_response.data["saved"])
 
         # 3. 프로필 조회 (결과 포함)
-        profile_url = reverse("taste_test:profile")
+        profile_url = reverse("taste_test:v1:profile")
         profile_response = self.client.get(profile_url)
         self.assertEqual(profile_response.status_code, status.HTTP_200_OK)
         self.assertTrue(profile_response.data["has_test"])
 
         # 4. 재테스트
-        retake_url = reverse("taste_test:retake")
+        retake_url = reverse("taste_test:v1:retake")
         retake_data = {"answers": {"Q1": "B", "Q2": "A", "Q3": "B", "Q4": "A", "Q5": "B", "Q6": "B"}}
         retake_response = self.client.put(retake_url, retake_data, format="json")
         self.assertEqual(retake_response.status_code, status.HTTP_200_OK)
@@ -288,24 +288,24 @@ class TasteTestViewFlowTest(APITestCase):
         # 익명 사용자 (인증 안함)
 
         # 1. 질문 조회 (익명 가능)
-        questions_url = reverse("taste_test:questions")
+        questions_url = reverse("taste_test:v1:questions")
         questions_response = self.client.get(questions_url)
         self.assertEqual(questions_response.status_code, status.HTTP_200_OK)
 
         # 2. 답변 제출 (익명 가능, 저장 안됨)
-        submit_url = reverse("taste_test:submit")
+        submit_url = reverse("taste_test:v1:submit")
         submit_data = {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "A"}}
         submit_response = self.client.post(submit_url, submit_data, format="json")
         self.assertEqual(submit_response.status_code, status.HTTP_201_CREATED)
         self.assertFalse(submit_response.data["saved"])
 
         # 3. 취향 유형 목록 조회 (익명 가능)
-        types_url = reverse("taste_test:types")
+        types_url = reverse("taste_test:v1:types")
         types_response = self.client.get(types_url)
         self.assertEqual(types_response.status_code, status.HTTP_200_OK)
 
         # 4. 프로필 조회 (익명 불가)
-        profile_url = reverse("taste_test:profile")
+        profile_url = reverse("taste_test:v1:profile")
         profile_response = self.client.get(profile_url)
         self.assertEqual(profile_response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -325,7 +325,7 @@ class TasteTestViewDataConsistencyTest(APITestCase):
         service_result = TasteTestService.process_taste_test(answers)
 
         # API를 통해 호출
-        url = reverse("taste_test:submit")
+        url = reverse("taste_test:v1:submit")
         api_response = self.client.post(url, {"answers": answers}, format="json")
 
         # 결과 비교 (saved 필드 제외)
@@ -346,19 +346,19 @@ class TasteTestViewDataConsistencyTest(APITestCase):
         )
 
         # 1. 답변 제출에서 이미지 URL
-        submit_url = reverse("taste_test:submit")
+        submit_url = reverse("taste_test:v1:submit")
         submit_response = self.client.post(
             submit_url, {"answers": {"Q1": "A", "Q2": "B", "Q3": "A", "Q4": "B", "Q5": "A", "Q6": "A"}}, format="json"
         )
         submit_image_url = submit_response.data["info"]["image_url"]
 
         # 2. 프로필에서 이미지 URL
-        profile_url = reverse("taste_test:profile")
+        profile_url = reverse("taste_test:v1:profile")
         profile_response = self.client.get(profile_url)
         profile_image_url = profile_response.data["image_url"]
 
         # 3. 취향 유형 목록에서 해당 유형의 이미지 URL
-        types_url = reverse("taste_test:types")
+        types_url = reverse("taste_test:v1:types")
         types_response = self.client.get(types_url)
         sweet_fruit_type = next((t for t in types_response.data["types"] if t["enum"] == "SWEET_FRUIT"), None)
         types_image_url = sweet_fruit_type["image_url"] if sweet_fruit_type else None

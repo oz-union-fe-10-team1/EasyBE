@@ -5,7 +5,7 @@ from .kakao_view import KakaoLoginView
 from .naver_view import NaverLoginView
 from .oauth_state_view import OAuthStateView
 from .taste_profile_view import TasteProfileView
-from .user_view import UserProfileView
+from .user_view import UserDeleteView, UserProfileView
 
 __all__ = [
     "KakaoLoginView",
@@ -15,4 +15,5 @@ __all__ = [
     "TasteProfileView",
     "CompleteAdultVerificationView",
     "UserProfileView",
+    "UserDeleteView",
 ]

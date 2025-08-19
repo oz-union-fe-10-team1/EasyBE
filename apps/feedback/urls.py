@@ -35,7 +35,7 @@ v1_patterns = [
         name="feedbacks-personalized",
     ),
     # 사용자별 피드백
-    path("feedbacks/my/", FeedbackViewSet.as_view({"get": "my_reviews"}), name="feedbacks-my"),
+    path("user/feedbacks/", FeedbackViewSet.as_view({"get": "my_reviews"}), name="feedbacks-my"),
     # 피드백 액션들 (이미지 관련)
     path(
         "feedbacks/<int:pk>/increment_view/",
