@@ -24,21 +24,6 @@ class TasteTestQuestionsView(APIView):
     @extend_schema(
         summary="테스트 질문 목록",
         description="취향 테스트용 6개 질문을 반환합니다",
-        responses={
-            200: {
-                "description": "질문 목록",
-                "example": [
-                    {
-                        "id": "Q1",
-                        "question": "카페에 가면 주로 시키는 메뉴는?",
-                        "options": {
-                            "A": "달콤한 바닐라 라떼나 과일 에이드",
-                            "B": "깔끔한 아메리카노나 고소한 곡물 라떼",
-                        },
-                    }
-                ],
-            }
-        },
         tags=["테스트"],
     )
     def get(self, request):
