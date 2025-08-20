@@ -1,21 +1,5 @@
-"""
-URL configuration for config project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-
 from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import (
@@ -26,19 +10,19 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/v1/auth/", include("apps.users.urls")),
-    # API URL 패턴
-    path("api/v1/product", include("apps.products.urls")),
-    path("api/v1/cart/", include("apps.cart.urls")),
-    path("api/v1/taste-test/", include("apps.taste_test.urls")),
+    path("api/", include("apps.users.urls", namespace="users")),
+    path("api/", include("apps.products.urls", namespace="products")),
+    path("api/", include("apps.feedback.urls", namespace="feedback")),
+    path("api/v1/orders/", include("apps.orders.urls", namespace="orders")),
+    path("api/v1/cart/", include("apps.cart.urls", namespace="cart")),
+    path("api/v1/stores/", include("apps.stores.urls", namespace="stores")),
+    path("api/", include("apps.taste_test.urls", namespace="taste_test")),
+    # Swagger and Redoc URL patterns
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path("__debug__/", include("debug_toolbar.urls")),
 ]
 
-if settings.DEBUG:
-    if "debug_toolbar" in settings.INSTALLED_APPS:
-        urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
-    if "drf_spectacular" in settings.INSTALLED_APPS:
-        urlpatterns += [
-            path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-            path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
-            path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
-        ]
+# Image serving settings (development/deployment environments)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])

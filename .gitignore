@@ -309,6 +309,4 @@ envs/
 .vscode/
 .idea/
 *.sublime*
-static/
 media/
-staticfiles/

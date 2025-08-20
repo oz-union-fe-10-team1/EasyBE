@@ -12,6 +12,8 @@ services:
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
+             chmod -R 755 /root/hanjan/static &&
+             chmod -R 755 /root/hanjan/media &&
              gunicorn --workers 3 --worker-class=uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 config.asgi:application
              "
     ports:
@@ -31,7 +33,7 @@ services:
     depends_on:
       - django
     volumes:
-      - ./resources/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      #- ./resources/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - static_volume:/root/hanjan/static
       - media_volume:/root/hanjan/media
     networks:

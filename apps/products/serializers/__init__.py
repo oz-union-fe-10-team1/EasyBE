@@ -1,36 +1,26 @@
 # apps/products/serializers/__init__.py
 
-from .brewery import BreweryCreateSerializer, BreweryDetailSerializer, BrewerySerializer
-from .metadata import (
-    AlcoholTypeSerializer,
-    ProductCategorySerializer,
-    ProductCategoryTreeSerializer,
-    RegionSerializer,
-    TasteTagSerializer,
+from .brewery import (
+    BreweryListSerializer,
+    BrewerySerializer,
+    BrewerySimpleSerializer,
+)
+from .drink import (
+    DrinkListSerializer,
 )
 from .product import (
-    ProductCreateSerializer,
-    ProductDetailSerializer,
+    ProductImageSerializer,
     ProductListSerializer,
-    ProductTasteTagSerializer,
-    ProductUpdateSerializer,
 )
 
 __all__ = [
-    # Product Serializers
-    "ProductListSerializer",
-    "ProductDetailSerializer",
-    "ProductCreateSerializer",
-    "ProductUpdateSerializer",
-    "ProductTasteTagSerializer",
-    # Brewery Serializers
+    # Brewery (관리자용 - 모든 기능 유지)
+    "BreweryListSerializer",
     "BrewerySerializer",
-    "BreweryDetailSerializer",
-    "BreweryCreateSerializer",
-    # Metadata Serializers
-    "RegionSerializer",
-    "AlcoholTypeSerializer",
-    "TasteTagSerializer",
-    "ProductCategorySerializer",
-    "ProductCategoryTreeSerializer",
+    "BrewerySimpleSerializer",
+    # Drink (관리자용 - 목록만)
+    "DrinkListSerializer",
+    # Product (UI용 + 관리자용)
+    "ProductImageSerializer",
+    "ProductListSerializer",
 ]
