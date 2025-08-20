@@ -44,33 +44,6 @@ class TasteTestSubmitView(APIView):
         summary="테스트 답변 제출",
         description="6개 질문에 대한 답변을 제출하고 취향 유형을 분석합니다. 로그인한 사용자의 경우 결과가 자동 저장됩니다.",
         request=TasteTestAnswersSerializer,
-        responses={
-            201: OpenApiResponse(
-                response=TasteTestResultSerializer,
-                description="테스트 결과",
-                examples=[
-                    OpenApiExample(
-                        "성공 응답",
-                        value={
-                            "type": "달콤과일파",
-                            "scores": {"달콤과일파": 3, "상큼톡톡파": 1, "묵직여운파": 1, "깔끔고소파": 1},
-                            "info": {
-                                "name": "달콤과일파",
-                                "enum": "SWEET_FRUIT",
-                                "description": "당신은 부드럽고 달콤한 맛에서 행복을 느끼는군요!",
-                                "characteristics": ["달콤함", "과일향", "로맨틱", "부드러움"],
-                                "image_url": "http://localhost:8000/images/types/sweet_fruit.png",
-                            },
-                            "saved": True,
-                        },
-                    )
-                ],
-            ),
-            400: {
-                "description": "잘못된 요청",
-                "example": {"errors": {"missing_questions": ["다음 질문에 답변해주세요: Q1, Q2"]}},
-            },
-        },
         tags=["테스트"],
     )
     def post(self, request):
@@ -84,8 +57,21 @@ class TasteTestSubmitView(APIView):
         validated_answers = serializer.validated_data["answers"]
         result = ControllerService.submit_test_answers(request.user, validated_answers)
 
-        # 3. 결과 반환
-        return Response(result, status=status.HTTP_201_CREATED)
+        # 3. 결과 반환 (CORS 헤더 추가)
+        response = Response(result, status=status.HTTP_201_CREATED)
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+
+        return response
+
+    def options(self, request):
+        """CORS preflight 요청 처리"""
+        response = Response(status=status.HTTP_200_OK)
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        return response
 
 
 class TasteTestRetakeView(APIView):
@@ -123,5 +109,18 @@ class TasteTestRetakeView(APIView):
                 {"message": "기존 테스트 결과가 없습니다. /submit/ 을 이용해주세요."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        # 3. 결과 반환
-        return Response(result, status=status.HTTP_200_OK)
+        # 3. 결과 반환 (CORS 헤더 추가)
+        response = Response(result, status=status.HTTP_200_OK)
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "PUT, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+
+        return response
+
+    def options(self, request):
+        """CORS preflight 요청 처리"""
+        response = Response(status=status.HTTP_200_OK)
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "PUT, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        return response
