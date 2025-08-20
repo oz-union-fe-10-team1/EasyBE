@@ -11,8 +11,8 @@ class FeedbackSerializer(serializers.ModelSerializer):
 
     # 응답용 필드들 (read_only)
     image_url = serializers.URLField(read_only=True, help_text="업로드된 이미지 URL")
-    product_name = serializers.CharField(source="product.name", read_only=True)
-    product_id = serializers.IntegerField(source="product.id", read_only=True)
+    product_name = serializers.CharField(source="order_item.product.name", read_only=True)
+    product_id = serializers.IntegerField(source="order_item.product.id", read_only=True)
     masked_username = serializers.CharField(read_only=True)
     has_image = serializers.BooleanField(read_only=True)
 
@@ -165,7 +165,7 @@ class FeedbackSerializer(serializers.ModelSerializer):
 class FeedbackListSerializer(serializers.ModelSerializer):
     """피드백 목록용 간소화된 시리얼라이저"""
 
-    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_name = serializers.CharField(source="order_item.product.name", read_only=True)
     masked_username = serializers.CharField(read_only=True)
     has_image = serializers.BooleanField(read_only=True)
 

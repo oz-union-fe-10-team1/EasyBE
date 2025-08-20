@@ -24,7 +24,9 @@ from .serializers import FeedbackListSerializer, FeedbackSerializer
 class FeedbackViewSet(viewsets.ModelViewSet):
     """피드백 ViewSet - 이미지 업로드 지원"""
 
-    queryset = Feedback.objects.all()
+    queryset = Feedback.objects.select_related(
+        "user", "order_item", "order_item__product", "order_item__order", "order_item__order__user"
+    ).all()
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
@@ -108,7 +110,12 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def recent_reviews(self, request):
         """실시간 후기"""
-        queryset = Feedback.objects.recent().high_rated().order_by("-created_at")[:4]
+        queryset = (
+            Feedback.objects.select_related("user", "order_item__product")
+            .recent()
+            .high_rated()
+            .order_by("-created_at")[:4]
+        )
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -116,7 +123,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def popular_reviews(self, request):
         """인기 후기"""
-        queryset = Feedback.objects.popular()[:8]
+        queryset = Feedback.objects.select_related("user", "order_item__product").popular()[:8]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -124,7 +131,9 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def personalized_reviews(self, request):
         """나와 비슷한 취향의 후기"""
-        queryset = Feedback.objects.personalized_for_user(request.user)[:8]
+        queryset = Feedback.objects.select_related("user", "order_item__product").personalized_for_user(request.user)[
+            :8
+        ]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -132,6 +141,6 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def my_reviews(self, request):
         """내가 작성한 리뷰들"""
-        queryset = Feedback.objects.filter(user=request.user)
+        queryset = Feedback.objects.select_related("order_item__product").filter(user=request.user)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
