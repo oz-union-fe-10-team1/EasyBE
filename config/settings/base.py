@@ -30,7 +30,6 @@ DJANGO_APPS = [
 
 CUSTOM_APPS = [
     "apps.users",
-    "apps.adminpanel",
     "apps.feedback",
     "apps.orders",
     "apps.products",
